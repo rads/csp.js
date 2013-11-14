@@ -22,7 +22,10 @@
     "mocha": "1.14.0",
     "chai": "1.8.1",
     "sinon": "1.7.3",
-    "sinon-chai": "2.4.0"
+    "sinon-chai": "2.4.0",
+    "browserify": "2.35.1",
+    "regenerator": "0.2.10",
+    "regeneratorify": "git+https://github.com/rads/regeneratorify#remove-runtime"
   },
   "dependencies": {
     "setimmediate": "1.0.1"

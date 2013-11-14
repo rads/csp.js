@@ -12,7 +12,7 @@ describe('csp', function() {
     var putCallback = sinon.spy();
     var takeCallback = sinon.spy();
 
-    var c = csp.chan();
+    var c = csp.chan(1);
     csp.putAsync(c, 42, putCallback);
     csp.takeAsync(c, takeCallback);
 
@@ -26,6 +26,16 @@ describe('csp', function() {
       expect(takeCallback).to.have.been.calledOnce;
       expect(takeCallback).to.have.been.calledWithExactly(42);
 
+      done();
+    });
+  });
+
+  it('puts and takes on a channel with a go block', function(done) {
+    var c = csp.chan(1);
+    csp.go(function*() {
+      yield csp.put(c, 42);
+      var val = yield csp.take(c);
+      expect(val).to.equal(42);
       done();
     });
   });
