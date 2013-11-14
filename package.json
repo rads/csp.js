@@ -1,7 +1,7 @@
 {
   "name": "csp.js",
   "version": "0.0.1",
-  "description": "\"CSP in vanilla JavaScript\"",
+  "description": "\"CSP for vanilla JavaScript.\"",
   "main": "index.js",
   "directories": {
     "test": "test"
