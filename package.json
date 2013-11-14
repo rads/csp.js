@@ -1,0 +1,30 @@
+{
+  "name": "csp.js",
+  "version": "0.0.1",
+  "description": "\"CSP in vanilla JavaScript\"",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rads/csp.js"
+  },
+  "author": "Radford Smith",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rads/csp.js/issues"
+  },
+  "devDependencies": {
+    "mocha": "1.14.0",
+    "chai": "1.8.1",
+    "sinon": "1.7.3",
+    "sinon-chai": "2.4.0"
+  },
+  "dependencies": {
+    "setimmediate": "1.0.1"
+  }
+}
