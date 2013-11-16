@@ -31,9 +31,13 @@ describe('csp', function() {
   });
 
   it('puts and takes on a channel with a go block', function(done) {
-    var c = csp.chan(1);
+    var c = csp.chan();
+
     csp.go(function*() {
       yield csp.put(c, 42);
+    });
+
+    csp.go(function*() {
       var val = yield csp.take(c);
       expect(val).to.equal(42);
       done();
