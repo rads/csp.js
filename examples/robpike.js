@@ -1,0 +1,67 @@
+var csp = require('../'),
+    chan = csp.chan,
+    go = csp.go,
+    take = csp.take,
+    put = csp.put,
+    alts = csp.alts,
+    timeout = csp.timeout;
+
+function randInt(size) {
+  return Math.floor(Math.random() * size);
+}
+
+function fakeSearch(kind) {
+  return function(c, query) {
+    go(function*() {
+      yield take(timeout(randInt(100)));
+      yield put(c, [kind, query]);
+    });
+  };
+}
+
+var web1 = fakeSearch('web1');
+var web2 = fakeSearch('web2');
+var image1 = fakeSearch('image1');
+var image2 = fakeSearch('image2');
+var video1 = fakeSearch('video1');
+var video2 = fakeSearch('video2');
+
+function fastest(query /* , replicas... */) {
+  var replicas = Array.prototype.slice.call(arguments, 1);
+  var c = chan();
+
+  replicas.forEach(function(replica) {
+    replica(c, query);
+  });
+
+  return c;
+}
+
+function google(query) {
+  var retChan = chan();
+  var c = chan();
+  var t = timeout(80);
+
+  go(function*() { yield put(c, yield take(fastest(query, web1, web2))); });
+  go(function*() { yield put(c, yield take(fastest(query, image1, image2))); });
+  go(function*() { yield put(c, yield take(fastest(query, video1, video2))); });
+  go(function*() {
+    var ret = [];
+
+    for (var i = 0; i < 3; i++) {
+      var result = yield alts([c, t]);
+      ret.push(result.value);
+    }
+
+    yield put(retChan, ret);
+  });
+
+  return retChan;
+}
+
+go(function*() {
+  for (var i = 0; i < 10; i++) {
+    var result = yield take(google('javascript'));
+    console.log.apply(console, result);
+  }
+});
