@@ -250,7 +250,11 @@ function timeout(duration) {
   var c = chan(1);
 
   setTimeout(function() {
-    channelPutSync(c, true);
+    go(function*() {
+      while (true) {
+        yield put(c, null);
+      }
+    });
   }, duration);
 
   return c;

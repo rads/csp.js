@@ -142,18 +142,20 @@ describe('csp', function() {
 
     it('puts a value on the channel after the given duration', function() {
       var c = csp.timeout(500);
-      var flag = false;
+      var count = 0;
 
       csp.go(function*() {
-        yield csp.take(c);
-        flag = true;
+        for (var i = 0; i < 3; i++) {
+          yield csp.take(c);
+          count++;
+        }
       });
 
       clock.tick(499);
-      expect(flag).to.not.be.ok;
+      expect(count).to.equal(0);
 
       clock.tick(501);
-      expect(flag).to.be.ok;
+      expect(count).to.equal(3);
     });
   });
 });
