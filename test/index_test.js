@@ -74,4 +74,86 @@ describe('csp', function() {
       done();
     });
   });
+
+  describe('alts', function() {
+    describe('with priority', function() {
+      it('returns the first value that can be taken', function(done) {
+        var c1 = csp.chan(1);
+        var c2 = csp.chan(1);
+        var c3 = csp.chan(1);
+
+        csp.go(function*() {
+          yield csp.put(c1, 42);
+          yield csp.put(c2, 43);
+
+          csp.go(function*() {
+            var result = yield csp.alts([c1, c2, c3], {priority: true});
+            expect(result.value).to.equal(42);
+            expect(result.chan).to.equal(c1);
+            done();
+          });
+        });
+      });
+    });
+
+    describe('with random order', function() {
+      var oldShuffle = csp._shuffle;
+
+      beforeEach(function() {
+        csp._shuffle = function() {
+          return [1, 0, 2];
+        };
+      });
+
+      afterEach(function() {
+        csp._shuffle = oldShuffle;
+      });
+
+      it('returns the first value that can be taken', function(done) {
+        var c1 = csp.chan(1);
+        var c2 = csp.chan(1);
+        var c3 = csp.chan(1);
+
+        csp.go(function*() {
+          yield csp.put(c1, 42);
+          yield csp.put(c2, 43);
+
+          csp.go(function*() {
+            var result = yield csp.alts([c1, c2, c3]);
+            expect(result.value).to.equal(43);
+            expect(result.chan).to.equal(c2);
+            done();
+          });
+        });
+      });
+    });
+  });
+
+  describe('timeout', function() {
+    var clock;
+
+    beforeEach(function() {
+      clock = sinon.useFakeTimers();
+    });
+
+    afterEach(function() {
+      clock.restore();
+    });
+
+    it('puts a value on the channel after the given duration', function() {
+      var c = csp.timeout(500);
+      var flag = false;
+
+      csp.go(function*() {
+        yield csp.take(c);
+        flag = true;
+      });
+
+      clock.tick(499);
+      expect(flag).to.not.be.ok;
+
+      clock.tick(501);
+      expect(flag).to.be.ok;
+    });
+  });
 });
