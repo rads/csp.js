@@ -12,7 +12,7 @@ describe('csp', function() {
     var putCallback = sinon.spy();
     var takeCallback = sinon.spy();
 
-    var c = csp.chan(1);
+    var c = csp.chan();
     csp.putAsync(c, 42, putCallback);
     csp.takeAsync(c, takeCallback);
 
@@ -30,7 +30,7 @@ describe('csp', function() {
     });
   });
 
-  it('puts and takes on a channel with a go block', function(done) {
+  it('puts and takes on a rendezvous channel', function(done) {
     var c = csp.chan();
 
     csp.go(function*() {
@@ -40,6 +40,37 @@ describe('csp', function() {
     csp.go(function*() {
       var val = yield csp.take(c);
       expect(val).to.equal(42);
+      done();
+    });
+  });
+
+  it('puts and takes on a channel with a fixed buffer of size 1', function(done) {
+    var c = csp.chan(1);
+
+    csp.go(function*() {
+      yield csp.put(c, 42);
+      var val = yield csp.take(c);
+      expect(val).to.equal(42);
+      done();
+    });
+  });
+
+  it('puts and takes on a channel with a fixed buffer of size 3', function(done) {
+    var c = csp.chan(3);
+
+    csp.go(function*() {
+      yield csp.put(c, 42);
+      yield csp.put(c, 43);
+      yield csp.put(c, 44);
+
+      var val1 = yield csp.take(c);
+      var val2 = yield csp.take(c);
+      var val3 = yield csp.take(c);
+
+      expect(val1).to.equal(42);
+      expect(val2).to.equal(43);
+      expect(val3).to.equal(44);
+
       done();
     });
   });
