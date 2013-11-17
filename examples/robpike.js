@@ -45,7 +45,7 @@ function google(query) {
   go(function*() { yield put(c, yield take(fastest(query, web1, web2))); });
   go(function*() { yield put(c, yield take(fastest(query, image1, image2))); });
   go(function*() { yield put(c, yield take(fastest(query, video1, video2))); });
-  go(function*() {
+  return go(function*() {
     var ret = [];
 
     for (var i = 0; i < 3; i++) {
@@ -53,10 +53,8 @@ function google(query) {
       ret.push(result.value);
     }
 
-    yield put(retChan, ret);
+    return ret;
   });
-
-  return retChan;
 }
 
 go(function*() {
