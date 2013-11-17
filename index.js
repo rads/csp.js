@@ -1,5 +1,8 @@
 require('setimmediate');
 
+var MAX_DIRTY = 64;
+var MAX_QUEUE_SIZE = 1024;
+
 function buffer(size) {
   return new FixedBuffer(size);
 }
@@ -19,11 +22,11 @@ FixedBuffer.prototype.remove = function() {
 };
 
 FixedBuffer.prototype.isFull = function() {
-  return (this._buffer._length === this._size);
+  return (this._buffer.length === this._size);
 };
 
 FixedBuffer.prototype.count = function() {
-  return this._buffer._length;
+  return this._buffer.length;
 };
 
 function arrayCopy(src, srcStart, dest, destStart, len) {
@@ -50,12 +53,12 @@ DroppingBuffer.prototype.remove = function() {
 };
 
 DroppingBuffer.prototype.add = function(val) {
-  if (this._buffer._length === this._size) return;
+  if (this._buffer.length === this._size) return;
   this._buffer.unshift(val);
 };
 
 DroppingBuffer.prototype.count = function() {
-  return this._buffer._length;
+  return this._buffer.length;
 };
 
 function slidingBuffer(size) {
@@ -76,30 +79,30 @@ SlidingBuffer.prototype.remove = function() {
 };
 
 SlidingBuffer.prototype.add = function(val) {
-  if (this._buffer._length === this._size) {
+  if (this._buffer.length === this._size) {
     this.remove();
   }
   this._buffer.unshift(val);
 };
 
 SlidingBuffer.prototype.count = function() {
-  return this._buffer._length;
+  return this._buffer.length;
 };
 
 function RingBuffer(size) {
   this._head = 0;
   this._tail = 0;
-  this._length = 0;
+  this.length = 0;
   this._arr = new Array(size);
 }
 
 RingBuffer.prototype.pop = function() {
-  if (this._length === 0) return null;
+  if (this.length === 0) return null;
 
   var x = this._arr[this._tail];
   this._arr[this._tail] = null;
   this._tail = ((this._tail + 1) % this._arr.length);
-  this._length--;
+  this.length--;
 
   return x;
 };
@@ -107,7 +110,7 @@ RingBuffer.prototype.pop = function() {
 RingBuffer.prototype.unshift = function(val) {
   this._arr[this._head] = val;
   this._head = ((this._head + 1) % this._arr.length);
-  this._length++;
+  this.length++;
 };
 
 RingBuffer.prototype.unboundedUnshift = function(val) {
@@ -122,15 +125,15 @@ RingBuffer.prototype.resize = function() {
   var newArr = new Array(this._arr.length * 2);
 
   if (this._tail < this._head) {
-    arrayCopy(this._arr, this._tail, newArr, 0, this._length);
+    arrayCopy(this._arr, this._tail, newArr, 0, this.length);
     this._tail = 0;
-    this._head = this._length;
+    this._head = this.length;
     this._arr = newArr;
   } else if (this._tail > this._head) {
     var len = (this._arr.length - this._tail);
     arrayCopy(this._arr, this._tail, newArr, 0, len);
     this._tail = 0;
-    this._head = this._length;
+    this._head = this.length;
     this._arr = newArr;
   } else if (this._tail === this._head) {
     this._tail = 0;
@@ -140,7 +143,7 @@ RingBuffer.prototype.resize = function() {
 };
 
 RingBuffer.prototype.cleanup = function(keepFn) {
-  for (var i = 0, j = this._length; i < j; i++) {
+  for (var i = 0, j = this.length; i < j; i++) {
     var val = this.pop();
     if (keepFn(val)) this.unshift(val);
   }
@@ -158,8 +161,10 @@ function chan(bufferOrN) {
 
   return {
     buffer: buffer,
-    puts: [],
-    takes: [],
+    puts: new RingBuffer(32),
+    dirtyPuts: 0,
+    takes: new RingBuffer(32),
+    dirtyTakes: 0,
     isClosed: false
   };
 }
@@ -230,7 +235,19 @@ function channelTake(channel, handler) {
       handler.commit();
       return {immediate: true, value: null};
     } else {
-      takes.unshift(handler);
+      if (channel.dirtyTakes > MAX_DIRTY) {
+        channel.dirtyTakes = 0;
+        takes.cleanup(function(handler) { return handler.isActive(); });
+      } else {
+        channel.dirtyTakes++;
+      }
+
+      if (takes.length >= MAX_QUEUE_SIZE) {
+        throw new Error('No more than ' + MAX_QUEUE_SIZE + ' pending takes ' +
+                        'are allowed on a single channel.');
+      }
+
+      takes.unboundedUnshift(handler);
       return {immediate: false};
     }
   }
@@ -275,7 +292,22 @@ function channelPut(channel, value, handler) {
     buffer.add(value);
     return {immediate: true};
   } else {
-    puts.unshift({
+    if (channel.dirtyPuts > MAX_DIRTY) {
+      channel.dirtyPuts = 0;
+      puts.cleanup(function(putter) {
+        return putter.handler.isActive();
+      });
+    } else {
+      channel.dirtyPuts++;
+    }
+
+    if (puts.length >= MAX_QUEUE_SIZE) {
+      throw new Error('No more than ' + MAX_QUEUE_SIZE + 'pending puts are ' +
+                      'allowed on a single channel. Consider using a ' +
+                      'windowed buffer.');
+    }
+
+    puts.unboundedUnshift({
       handler: handler,
       value: value
     });
