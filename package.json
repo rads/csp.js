@@ -7,7 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha test"
+    "pretest": "./node_modules/.bin/jshint index.js lib",
+    "test": "./node_modules/.bin/mocha --harmony-generators test/**/*_test.js"
   },
   "jshintConfig": {
     "node": true,
