@@ -175,8 +175,11 @@ function channelPut(channel, value, handler) {
   }
 }
 
+function noOp() {}
+
 function putAsync(channel, value, onComplete, onCaller) {
   if (typeof onCaller === 'undefined') onCaller = true;
+  if (!onComplete) onComplete = noOp;
 
   var result = channelPut(channel, value, new FnHandler(onComplete));
   if (result.immediate) {
@@ -191,6 +194,7 @@ function putAsync(channel, value, onComplete, onCaller) {
 function go(block) {
   var machine = {gen: block(), ret: chan()};
   runMachine(machine);
+  return machine.ret;
 }
 
 function runMachine(machine, yieldVal) {
@@ -216,6 +220,13 @@ function runMachine(machine, yieldVal) {
           currentStep = machine.gen.next(result.value);
         }
     }
+  }
+
+  if (currentStep.value && typeof currentStep.value.op === 'undefined') {
+    var retValue = currentStep.value;
+    putAsync(machine.ret, retValue, function() {
+      close(machine.ret);
+    });
   }
 }
 
@@ -323,6 +334,8 @@ function shuffle(array) {
 }
 
 function take(channel) {
+  if (!channel) throw new Error('Called take with invalid channel');
+
   return {
     op: 'take',
     channel: channel
@@ -330,8 +343,10 @@ function take(channel) {
 }
 
 function put(channel, value) {
+  if (!channel) throw new Error('Called put with invalid channel');
+
   if (typeof value === 'undefined') {
-    throw new Error("Value was not provided to put on channel");
+    throw new Error("Called put with undefined value");
   }
 
   if (value === null) {

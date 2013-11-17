@@ -75,6 +75,21 @@ describe('csp', function() {
     });
   });
 
+  it('go blocks return a channel', function(done) {
+    var c1 = csp.chan();
+    var c2 = csp.go(function*() {
+      yield csp.take(c1);
+      return 42;
+    });
+
+    csp.putAsync(c1, 43);
+
+    csp.takeAsync(c2, function(val) {
+      expect(val).to.equal(42);
+      done();
+    });
+  });
+
   describe('with a closed channel', function() {
     it('takes return null', function(done) {
       var c = csp.chan(1);
