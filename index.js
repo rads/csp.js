@@ -22,85 +22,70 @@ function chan(bufferOrN) {
   };
 }
 
-function channelTakeSync(channel) {
+function channelTake(channel, onComplete) {
   var buffer = channel.buffer;
   var puts = channel.puts;
+  var takes = channel.takes;
 
   if (buffer && buffer.contents.length) {
-    return buffer.contents.pop();
+    return {immediate: true, value: buffer.contents.pop()};
   } else {
     if (puts.length) {
       var put = puts.pop();
-      put.onComplete();
-      return put.value;
+      setImmediate(put.onComplete);
+      return {immediate: true, value: put.value};
     } else {
-      return null;
+      takes.unshift({onComplete: onComplete});
+      return {immediate: false};
     }
   }
 }
 
-function channelTakeAsync(channel, onComplete) {
+function takeAsync(channel, onComplete, onCaller) {
+  if (typeof onCaller === 'undefined') onCaller = true;
+
+  var result = channelTake(channel, onComplete);
+  if (result.immediate) {
+    if (onCaller) {
+      onComplete(result.value);
+    } else {
+      setImmediate(function() { onComplete(result.value); });
+    }
+  }
+}
+
+function channelPut(channel, value, onComplete) {
   var buffer = channel.buffer;
   var takes = channel.takes;
   var puts = channel.puts;
-
-  if (buffer && buffer.contents.length) {
-    setImmediate(function() {
-      onComplete(buffer.contents.pop());
-    });
-  } else {
-    if (puts.length) {
-      setImmediate(function() {
-        var put = puts.pop();
-        put.onComplete();
-        onComplete(put.value);
-      });
-    } else {
-      takes.unshift({onComplete: onComplete});
-    }
-  }
-}
-
-function channelPutSync(channel, value) {
-  var buffer = channel.buffer;
-  var takes = channel.takes;
 
   if (takes.length) {
     var take = takes.pop();
-    take.onComplete(value);
-    return true;
+    setImmediate(function() { take.onComplete(value); });
+    return {immediate: true};
   } else {
     if (buffer && (buffer.contents.length < buffer.size)) {
       buffer.contents.unshift(value);
-      return true;
-    } else {
-      return null;
-    }
-  }
-}
-
-function channelPutAsync(channel, value, onComplete) {
-  var buffer = channel.buffer;
-  var takes = channel.takes;
-  var puts = channel.puts;
-
-  if (takes.length) {
-    setImmediate(function() {
-      var take = takes.pop();
-      take.onComplete(value);
-      onComplete();
-    });
-  } else {
-    if (buffer && (buffer.contents.length < buffer.size)) {
-      setImmediate(function() {
-        buffer.contents.unshift(value);
-        onComplete();
-      });
+      return {immediate: true};
     } else {
       puts.unshift({
         onComplete: onComplete,
         value: value
       });
+      return {immediate: false};
+    }
+  }
+}
+
+function putAsync(channel, value, onComplete, onCaller) {
+  if (typeof onCaller === 'undefined') onCaller = true;
+
+  var result = channelPut(channel, value, onComplete);
+  if (result.immediate) {
+    if (onCaller) {
+      onComplete();
+    } else {
+      setImmediate(onComplete);
     }
   }
 }
@@ -122,7 +107,11 @@ function runMachine(machine, startStep) {
         return;
 
       case 'continue':
-        currentStep = machine.next(result.value);
+        if (typeof result.value === 'undefined') {
+          currentStep = machine.next();
+        } else {
+          currentStep = machine.next(result.value);
+        }
     }
   }
 }
@@ -130,29 +119,28 @@ function runMachine(machine, startStep) {
 var operations = {
   take: function(machine, instruction) {
     var channel = instruction.channel;
-    var taken = channelTakeSync(channel);
+    var result = channelTake(channel, function(val) {
+      runMachine(machine, machine.next(val));
+    });
 
-    if (taken) {
-      return {state: 'continue', value: taken};
+    if (result.immediate) {
+      return {state: 'continue', value: result.value};
     } else {
-      channelTakeAsync(channel, function(val) {
-        runMachine(machine, machine.next(val));
-      });
-      return {state: 'park', value: null};
+      return {state: 'park'};
     }
   },
 
   put: function(machine, instruction) {
     var channel = instruction.channel;
     var value = instruction.value;
+    var result = channelPut(channel, value, function() {
+      runMachine(machine, machine.next());
+    });
 
-    if (channelPutSync(channel, value)) {
-      return {state: 'continue', value: null};
+    if (result.immediate) {
+      return {state: 'continue'};
     } else {
-      channelPutAsync(channel, value, function() {
-        runMachine(machine, machine.next());
-      });
-      return {state: 'park', value: null};
+      return {state: 'park'};
     }
   },
 
@@ -167,23 +155,23 @@ var operations = {
       if (taken) break;
 
       var channel = channels[order[i]];
-      var val = channelTakeSync(channel);
+      var result = channelTake(channel, function(val) {
+        if (taken) return;
 
-      if (val) {
         taken = {
           chan: channel,
-          value: val
+          value: result.value
+        };
+
+        runMachine(machine, machine.next(taken));
+      });
+
+      if (result.immediate) {
+        taken = {
+          chan: channel,
+          value: result.value
         };
         break;
-      } else {
-        channelTakeAsync(channel, function(val) {
-          if (taken) return;
-          taken = {
-            chan: channel,
-            value: val
-          };
-          runMachine(machine, machine.next(taken));
-        });
       }
     }
 
@@ -229,6 +217,14 @@ function take(channel) {
 }
 
 function put(channel, value) {
+  if (typeof value === 'undefined') {
+    throw new Error("Value was not provided to put on channel");
+  }
+
+  if (value === null) {
+    throw new Error("Can't put null on a channel");
+  }
+
   return {
     op: 'put',
     channel: channel,
@@ -252,7 +248,7 @@ function timeout(duration) {
   setTimeout(function() {
     go(function*() {
       while (true) {
-        yield put(c, null);
+        yield put(c, true);
       }
     });
   }, duration);
@@ -262,8 +258,8 @@ function timeout(duration) {
 
 module.exports = {
   chan: chan,
-  putAsync: channelPutAsync,
-  takeAsync: channelTakeAsync,
+  putAsync: putAsync,
+  takeAsync: takeAsync,
   go: go,
   put: put,
   take: take,

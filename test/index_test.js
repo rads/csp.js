@@ -14,7 +14,7 @@ describe('csp', function() {
 
     var c = csp.chan();
     csp.putAsync(c, 42, putCallback);
-    csp.takeAsync(c, takeCallback);
+    csp.takeAsync(c, takeCallback, false);
 
     expect(putCallback).to.not.have.been.called;
     expect(takeCallback).to.not.have.been.called;
@@ -140,7 +140,7 @@ describe('csp', function() {
       clock.restore();
     });
 
-    it('puts a value on the channel after the given duration', function() {
+    it('puts a value on the channel after the given duration', function(done) {
       var c = csp.timeout(500);
       var count = 0;
 
@@ -152,10 +152,15 @@ describe('csp', function() {
       });
 
       clock.tick(499);
-      expect(count).to.equal(0);
+      setImmediate(function() {
+        expect(count).to.equal(0);
 
-      clock.tick(501);
-      expect(count).to.equal(3);
+        clock.tick(501);
+        setImmediate(function() {
+          expect(count).to.equal(3);
+          done();
+        });
+      });
     });
   });
 });
