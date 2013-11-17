@@ -267,19 +267,15 @@ var operations = {
     var shuffle = module.exports._shuffle;
     var order = (instruction.priority ? range(len) : shuffle(range(len)));
     var flag = new AltFlag;
-    var handler;
-    var result;
+    var handler, result, channel, putChan, putValue;
 
     for (var i = 0; i < len; i++) {
-      var channel = channels[order[i]];
+      channel = channels[order[i]];
 
       if (Array.isArray(channel)) {
-        var putChan = channel[0];
-        var putValue = channel[1];
-        handler = new AltHandler(flag, function() {
-          var put = {chan: putChan, value: null};
-          runMachine(machine, put);
-        });
+        putChan = channel[0];
+        putValue = channel[1];
+        handler = altsPutHandler(machine, channel);
         result = channelPut(putChan, putValue, handler);
 
         if (result.immediate) {
@@ -287,10 +283,7 @@ var operations = {
           return {state: 'continue', value: put};
         }
       } else {
-        handler = new AltHandler(flag, function(val) {
-          var taken = {chan: channel, value: val};
-          runMachine(machine, taken);
-        });
+        handler = altsTakeHandler(machine, channel, flag);
         result = channelTake(channel, handler);
 
         if (result.immediate) {
@@ -309,6 +302,25 @@ var operations = {
     }
   }
 };
+
+// These handlers are created in separate functions to prevent the callbacks
+// from capturing variables outside of them. When the callbacks were previously
+// inlined, they captured the channel variable and later executed with the
+// incorrect channel.
+
+function altsTakeHandler(machine, channel, flag) {
+  return new AltHandler(flag, function(val) {
+    var taken = {chan: channel, value: val};
+    runMachine(machine, taken);
+  });
+}
+
+function altsPutHandler(machine, channel) {
+  return new AltHandler(flag, function() {
+    var put = {chan: channel, value: null};
+    runMachine(machine, put);
+  });
+}
 
 function range(size) {
   var ints = [];
