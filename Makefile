@@ -1,8 +1,8 @@
 COMPILER := ./node_modules/.bin/browserify -t regeneratorify
 
-all: test/browser_tests.js examples/build/robpike.js examples/build/timeout.js
-
 test: test/browser_tests.js
+
+all: test/browser_tests.js examples/build/robpike.js examples/build/timeout.js
 
 test/browser_tests.js: index.js test/index_test.js
 	$(COMPILER) test/index_test.js > test/browser_tests.js
