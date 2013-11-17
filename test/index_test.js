@@ -269,4 +269,54 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('pipe', function() {
+    it('transfers values from one channel to another', function(done) {
+      var c1 = csp.chan();
+      var c2 = csp.chan();
+      csp.pipe(c1, c2);
+
+      csp.go(function*() {
+        yield csp.put(c1, 42);
+        var val = yield csp.take(c2);
+
+        expect(val).to.equal(42);
+        done();
+      });
+    });
+
+    describe('with no third argument', function() {
+      it('closes the destination channel when the source closes', function(done) {
+        var c1 = csp.chan(1);
+        var c2 = csp.chan(1);
+        csp.pipe(c1, c2);
+        csp.close(c1);
+
+        csp.go(function*() {
+          yield csp.put(c2, 42);
+          var val = yield csp.take(c2);
+
+          expect(val).to.be.null;
+          done();
+        });
+      });
+    });
+
+    describe('with third argument set to false', function() {
+      it('DOES NOT close the destination channel when the source closes', function(done) {
+        var c1 = csp.chan(1);
+        var c2 = csp.chan(1);
+        csp.pipe(c1, c2, false);
+        csp.close(c1);
+
+        csp.go(function*() {
+          yield csp.put(c2, 42);
+          var val = yield csp.take(c2);
+
+          expect(val).to.equal(42);
+          done();
+        });
+      });
+    });
+  });
 });

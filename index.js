@@ -22,6 +22,24 @@ function timeout(duration) {
   return c;
 }
 
+function pipe(from, to, shouldClose) {
+  if (typeof shouldClose === 'undefined') shouldClose = true;
+
+  go(function*() {
+    while (true) {
+      var val = yield take(from);
+      if (val === null) {
+        if (shouldClose) close(to);
+        break;
+      } else {
+        yield put(to, val);
+      }
+    }
+  });
+
+  return to;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -35,5 +53,6 @@ module.exports = {
   take: take,
   alts: alts,
   timeout: timeout,
+  pipe: pipe,
   _stubShuffle: goBlocks._stubShuffle
 };
