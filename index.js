@@ -1,18 +1,34 @@
 require('setimmediate');
 
-function fixedBuffer(size) {
-  return {
-    contents: [],
-    size: size
-  };
+function FixedBuffer(size) {
+  this._contents = [];
+  this._size = size;
 }
+
+FixedBuffer.prototype.add = function(val) {
+  this._contents.unshift(val);
+};
+
+FixedBuffer.prototype.remove = function() {
+  return this._contents.pop();
+};
+
+FixedBuffer.prototype.isFull = function() {
+  return (this.count() === this._size);
+};
+
+FixedBuffer.prototype.count = function() {
+  return this._contents.length;
+};
 
 function chan(bufferOrN) {
   var buffer;
-  if (bufferOrN) {
-    buffer = fixedBuffer(bufferOrN);
-  } else {
+  if (!bufferOrN) {
     buffer = null;
+  } else if (typeof bufferOrN === 'number') {
+    buffer = new FixedBuffer(bufferOrN);
+  } else {
+    buffer = bufferOrN;
   }
 
   return {
@@ -69,9 +85,9 @@ function channelTake(channel, handler) {
   var puts = channel.puts;
   var takes = channel.takes;
 
-  if (buffer && buffer.contents.length) {
+  if (buffer && buffer.count() > 0) {
     handler.commit();
-    return {immediate: true, value: buffer.contents.pop()};
+    return {immediate: true, value: buffer.remove()};
   } else {
     var putter = puts.pop();
     while (putter) {
@@ -129,9 +145,9 @@ function channelPut(channel, value, handler) {
     }
   }
 
-  if (buffer && (buffer.contents.length < buffer.size)) {
+  if (buffer && !buffer.isFull()) {
     handler.commit();
-    buffer.contents.unshift(value);
+    buffer.add(value);
     return {immediate: true};
   } else {
     puts.unshift({
