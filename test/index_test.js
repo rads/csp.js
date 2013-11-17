@@ -75,6 +75,38 @@ describe('csp', function() {
     });
   });
 
+  describe('with a closed channel', function() {
+    it('takes return null', function(done) {
+      var c = csp.chan(1);
+      csp.close(c);
+
+      csp.go(function*() {
+        yield csp.put(c, 42);
+        var val = yield csp.take(c);
+
+        expect(val).to.be.null;
+        done();
+      });
+    });
+
+    it('puts are no-op', function(done) {
+      var c = csp.chan(2);
+
+      csp.go(function*() {
+        yield csp.put(c, 42);
+        csp.close(c);
+        yield csp.put(c, 43);
+
+        var val1 = yield csp.take(c);
+        var val2 = yield csp.take(c);
+
+        expect(val1).to.equal(42);
+        expect(val2).to.be.null;
+        done();
+      });
+    });
+  });
+
   describe('alts', function() {
     describe('with priority', function() {
       it('returns the first value that can be taken', function(done) {
@@ -140,24 +172,21 @@ describe('csp', function() {
       clock.restore();
     });
 
-    it('puts a value on the channel after the given duration', function(done) {
+    it('closes the channel after the given duration', function(done) {
       var c = csp.timeout(500);
-      var count = 0;
+      var val;
 
       csp.go(function*() {
-        for (var i = 0; i < 3; i++) {
-          yield csp.take(c);
-          count++;
-        }
+        val = yield csp.take(c);
       });
 
       clock.tick(499);
       setImmediate(function() {
-        expect(count).to.equal(0);
+        expect(val).to.be.undefined;
 
         clock.tick(501);
         setImmediate(function() {
-          expect(count).to.equal(3);
+          expect(val).to.be.null;
           done();
         });
       });

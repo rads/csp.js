@@ -18,7 +18,8 @@ function chan(bufferOrN) {
   return {
     buffer: buffer,
     puts: [],
-    takes: []
+    takes: [],
+    isClosed: false
   };
 }
 
@@ -286,17 +287,26 @@ function alts(channels, options) {
 }
 
 function timeout(duration) {
-  var c = chan(1);
-
-  setTimeout(function() {
-    go(function*() {
-      while (true) {
-        yield put(c, true);
-      }
-    });
-  }, duration);
-
+  var c = chan();
+  setTimeout(function() { close(c); }, duration);
   return c;
+}
+
+function close(channel) {
+  channel.isClosed = true;
+
+  var takes = channel.takes;
+  var taker = takes.pop();
+
+  while (taker) {
+    if (taker.isActive()) {
+      var callback = taker.commit();
+      setImmediate(function() { callback(null); });
+      break;
+    }
+
+    taker = takes.pop();
+  }
 }
 
 module.exports = {
@@ -308,5 +318,6 @@ module.exports = {
   take: take,
   alts: alts,
   timeout: timeout,
+  close: close,
   _shuffle: shuffle
 };
