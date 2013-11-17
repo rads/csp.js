@@ -275,7 +275,7 @@ var operations = {
       if (Array.isArray(channel)) {
         putChan = channel[0];
         putValue = channel[1];
-        handler = altsPutHandler(machine, channel);
+        handler = altsPutHandler(machine, putChan, flag);
         result = channelPut(putChan, putValue, handler);
 
         if (result.immediate) {
@@ -315,7 +315,7 @@ function altsTakeHandler(machine, channel, flag) {
   });
 }
 
-function altsPutHandler(machine, channel) {
+function altsPutHandler(machine, channel, flag) {
   return new AltHandler(flag, function() {
     var put = {chan: channel, value: null};
     runMachine(machine, put);
