@@ -1,5 +1,6 @@
-var buffers = require('./lib/buffers');
+'use strict';
 
+var buffers = require('./lib/buffers');
 require('setimmediate');
 
 var MAX_DIRTY = 64;
@@ -36,11 +37,11 @@ function AltFlag() {
 AltFlag.prototype.commit = function() {
   this._isActive = false;
   return true;
-}
+};
 
 AltFlag.prototype.isActive = function() {
   return this._isActive;
-}
+};
 
 function AltHandler(flag, callback) {
   this._flag = flag;
@@ -54,7 +55,7 @@ AltHandler.prototype.isActive = function() {
 AltHandler.prototype.commit = function() {
   this._flag.commit();
   return this._callback;
-}
+};
 
 function FnHandler(callback) {
   this._callback = callback;
@@ -266,6 +267,8 @@ var operations = {
     var shuffle = module.exports._shuffle;
     var order = (instruction.priority ? range(len) : shuffle(range(len)));
     var flag = new AltFlag;
+    var handler;
+    var result;
 
     for (var i = 0; i < len; i++) {
       var channel = channels[order[i]];
@@ -273,22 +276,22 @@ var operations = {
       if (Array.isArray(channel)) {
         var putChan = channel[0];
         var putValue = channel[1];
-        var handler = new AltHandler(flag, function() {
+        handler = new AltHandler(flag, function() {
           var put = {chan: putChan, value: null};
           runMachine(machine, put);
         });
-        var result = channelPut(putChan, putValue, handler);
+        result = channelPut(putChan, putValue, handler);
 
         if (result.immediate) {
           var put = {chan: putChan, value: null};
           return {state: 'continue', value: put};
         }
       } else {
-        var handler = new AltHandler(flag, function(val) {
+        handler = new AltHandler(flag, function(val) {
           var taken = {chan: channel, value: val};
           runMachine(machine, taken);
         });
-        var result = channelTake(channel, handler);
+        result = channelTake(channel, handler);
 
         if (result.immediate) {
           var taken = {chan: channel, value: result.value};
@@ -297,9 +300,9 @@ var operations = {
       }
     }
 
-    var hasDefault = (typeof instruction.default !== 'undefined');
+    var hasDefault = (typeof instruction['default'] !== 'undefined');
     if (hasDefault && flag.isActive() && flag.commit()) {
-      var value = {chan: 'default', value: instruction.default};
+      var value = {chan: 'default', value: instruction['default']};
       return {state: 'continue', value: value};
     } else {
       return {state: 'park'};
@@ -369,8 +372,8 @@ function alts(channels, options) {
     priority: options.priority
   };
 
-  if (typeof options.default !== 'undefined') {
-    instruction.default = options.default;
+  if (typeof options['default'] !== 'undefined') {
+    instruction['default'] = options['default'];
   }
 
   return instruction;
