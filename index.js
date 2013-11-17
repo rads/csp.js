@@ -220,15 +220,31 @@ var operations = {
 
     for (var i = 0; i < len; i++) {
       var channel = channels[order[i]];
-      var handler = new AltHandler(flag, function(val) {
-        var taken = {chan: channel, value: val};
-        runMachine(machine, machine.next(taken));
-      });
-      var result = channelTake(channel, handler);
 
-      if (result.immediate) {
-        var taken = {chan: channel, value: result.value};
-        return {state: 'continue', value: taken};
+      if (Array.isArray(channel)) {
+        var putChan = channel[0];
+        var putValue = channel[1];
+        var handler = new AltHandler(flag, function() {
+          var put = {chan: putChan, value: null};
+          runMachine(machine, machine.next(put));
+        });
+        var result = channelPut(putChan, putValue, handler);
+
+        if (result.immediate) {
+          var put = {chan: putChan, value: null};
+          return {state: 'continue', value: put};
+        }
+      } else {
+        var handler = new AltHandler(flag, function(val) {
+          var taken = {chan: channel, value: val};
+          runMachine(machine, machine.next(taken));
+        });
+        var result = channelTake(channel, handler);
+
+        if (result.immediate) {
+          var taken = {chan: channel, value: result.value};
+          return {state: 'continue', value: taken};
+        }
       }
     }
 

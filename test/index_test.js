@@ -174,6 +174,23 @@ describe('csp', function() {
         });
       });
     });
+
+    describe('with put operations', function(done) {
+      it('puts a value on the first open channel', function() {
+        var c1 = csp.chan();
+        var c2 = csp.chan();
+        var c3 = csp.chan();
+
+        csp.go(function*() {
+          var result = yield csp.alts([[c1, 42], [c2, 43], c3]);
+          var val = yield csp.take(c2);
+
+          expect(result.value).to.be.null;
+          expect(result.chan).to.equal(c2);
+          expect(val).to.equal(42);
+        });
+      });
+    });
   });
 
   describe('timeout', function() {
