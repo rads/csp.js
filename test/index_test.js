@@ -107,6 +107,36 @@ describe('csp', function() {
     });
   });
 
+  describe('sliding buffer', function() {
+    it('drops old values when the buffer is full', function(done) {
+      var c = csp.chan(csp.slidingBuffer(1));
+
+      csp.go(function*() {
+        yield csp.put(c, 42);
+        yield csp.put(c, 43);
+        var val = yield csp.take(c);
+
+        expect(val).to.equal(43);
+        done();
+      });
+    });
+  });
+
+  describe('dropping buffer', function() {
+    it('drops new values when the buffer is full', function(done) {
+      var c = csp.chan(csp.droppingBuffer(1));
+
+      csp.go(function*() {
+        yield csp.put(c, 42);
+        yield csp.put(c, 43);
+        var val = yield csp.take(c);
+
+        expect(val).to.equal(42);
+        done();
+      });
+    });
+  });
+
   describe('alts', function() {
     describe('with default value', function() {
       it('returns the default when there are no immediate values', function(done) {
