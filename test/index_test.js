@@ -189,16 +189,16 @@ describe('csp', function() {
     });
 
     describe('with random order', function() {
-      var oldShuffle = csp._shuffle;
+      var oldShuffle;
 
       beforeEach(function() {
-        csp._shuffle = function() {
+        oldShuffle = csp._stubShuffle(function() {
           return [1, 0, 2];
-        };
+        });
       });
 
       afterEach(function() {
-        csp._shuffle = oldShuffle;
+        csp._stubShuffle(oldShuffle);
       });
 
       it('returns the first value that can be taken', function(done) {
