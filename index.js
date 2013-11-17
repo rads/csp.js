@@ -23,7 +23,7 @@ function chan(bufferOrN) {
 }
 
 function altFlag() {
-  return {isActive: false};
+  return {isActive: true};
 }
 
 function AltHandler(flag, callback) {
@@ -53,6 +53,8 @@ FnHandler.prototype.commit = function() {
 };
 
 function channelTake(channel, handler) {
+  if (!handler.isActive()) return {immediate: false};
+
   var buffer = channel.buffer;
   var puts = channel.puts;
   var takes = channel.takes;
@@ -73,8 +75,9 @@ function channelTake(channel, handler) {
       }
     }
 
-    if (puts.length) {
-      var put = puts.pop();
+    if (channel.isClosed) {
+      handler.commit();
+      return {immediate: true, value: null};
     } else {
       takes.unshift(handler);
       return {immediate: false};
@@ -96,6 +99,10 @@ function takeAsync(channel, onComplete, onCaller) {
 }
 
 function channelPut(channel, value, handler) {
+  if (channel.isClosed || !handler.isActive()) {
+    return {immediate: true};
+  }
+
   var buffer = channel.buffer;
   var takes = channel.takes;
   var puts = channel.puts;
@@ -199,38 +206,23 @@ var operations = {
     var len = channels.length;
     var shuffle = module.exports._shuffle;
     var order = (instruction.priority ? range(len) : shuffle(range(len)));
-    var taken;
+    var flag = altFlag();
 
     for (var i = 0; i < len; i++) {
-      if (taken) break;
-
       var channel = channels[order[i]];
-      var handler = new FnHandler(function(val) {
-        if (taken) return;
-
-        taken = {
-          chan: channel,
-          value: result.value
-        };
-
+      var handler = new AltHandler(flag, function(val) {
+        var taken = {chan: channel, value: val};
         runMachine(machine, machine.next(taken));
       });
       var result = channelTake(channel, handler);
 
       if (result.immediate) {
-        taken = {
-          chan: channel,
-          value: result.value
-        };
-        break;
+        var taken = {chan: channel, value: result.value};
+        return {state: 'continue', value: taken};
       }
     }
 
-    if (taken) {
-      return {state: 'continue', value: taken};
-    } else {
-      return {state: 'park', value: null};
-    }
+    return {state: 'park'};
   }
 };
 
