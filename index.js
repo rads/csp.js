@@ -189,12 +189,17 @@ function putAsync(channel, value, onComplete, onCaller) {
 }
 
 function go(block) {
-  var machine = block();
-  runMachine(machine, machine.next());
+  var machine = {gen: block(), ret: chan()};
+  runMachine(machine);
 }
 
-function runMachine(machine, startStep) {
-  var currentStep = startStep;
+function runMachine(machine, yieldVal) {
+  var currentStep;
+  if (typeof yieldVal !== 'undefined') {
+    currentStep = machine.gen.next(yieldVal);
+  } else {
+    currentStep = machine.gen.next();
+  }
 
   while (!currentStep.done) {
     var instruction = currentStep.value;
@@ -206,9 +211,9 @@ function runMachine(machine, startStep) {
 
       case 'continue':
         if (typeof result.value === 'undefined') {
-          currentStep = machine.next();
+          currentStep = machine.gen.next();
         } else {
-          currentStep = machine.next(result.value);
+          currentStep = machine.gen.next(result.value);
         }
     }
   }
@@ -218,7 +223,7 @@ var operations = {
   take: function(machine, instruction) {
     var channel = instruction.channel;
     var handler = new FnHandler(function(val) {
-      runMachine(machine, machine.next(val));
+      runMachine(machine, val);
     });
     var result = channelTake(channel, handler);
 
@@ -233,7 +238,7 @@ var operations = {
     var channel = instruction.channel;
     var value = instruction.value;
     var handler = new FnHandler(function() {
-      runMachine(machine, machine.next());
+      runMachine(machine);
     });
     var result = channelPut(channel, value, handler);
 
@@ -259,7 +264,7 @@ var operations = {
         var putValue = channel[1];
         var handler = new AltHandler(flag, function() {
           var put = {chan: putChan, value: null};
-          runMachine(machine, machine.next(put));
+          runMachine(machine, put);
         });
         var result = channelPut(putChan, putValue, handler);
 
@@ -270,7 +275,7 @@ var operations = {
       } else {
         var handler = new AltHandler(flag, function(val) {
           var taken = {chan: channel, value: val};
-          runMachine(machine, machine.next(taken));
+          runMachine(machine, taken);
         });
         var result = channelTake(channel, handler);
 
