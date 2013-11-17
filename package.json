@@ -14,6 +14,7 @@
     "node": true,
     "strict": true,
     "loopfunc": true,
+    "esnext": true,
     "-W058": false
   },
   "repository": {
