@@ -334,4 +334,19 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('mapPush', function() {
+    it('applies a fn to values put on the target channel', function(done) {
+      var mapped = csp.chan(1);
+      var c1 = csp.mapPush(mapped, function(x) { return x + 1; });
+
+      csp.go(function*() {
+        yield csp.put(c1, 42);
+        var val = yield csp.take(mapped);
+
+        expect(val).to.equal(43);
+        done();
+      });
+    });
+  });
 });

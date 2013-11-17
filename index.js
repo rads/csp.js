@@ -88,6 +88,27 @@ MapPullHandler.prototype.commit = function() {
   };
 };
 
+function mapPush(channel, fn) {
+  return new MapPushChannel(channel, fn);
+}
+
+function MapPushChannel(channel, fn) {
+  this._channel = channel;
+  this._fn = fn;
+}
+
+MapPushChannel.prototype.take = function(handler) {
+  return this._channel.take(handler);
+};
+
+MapPushChannel.prototype.put = function(value, handler) {
+  return this._channel.put(this._fn(value), handler);
+};
+
+MapPushChannel.prototype.close = function() {
+  return this._channel.close();
+};
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -103,5 +124,6 @@ module.exports = {
   timeout: timeout,
   pipe: pipe,
   mapPull: mapPull,
+  mapPush: mapPush,
   _stubShuffle: goBlocks._stubShuffle
 };
