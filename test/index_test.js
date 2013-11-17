@@ -108,6 +108,21 @@ describe('csp', function() {
   });
 
   describe('alts', function() {
+    describe('with default value', function() {
+      it('returns the default when there are no immediate values', function(done) {
+        var c1 = csp.chan();
+        var c2 = csp.chan();
+        var c3 = csp.chan();
+
+        csp.go(function*() {
+          var result = yield csp.alts([c1, c2, c3], {default: 42});
+          expect(result.value).to.equal(42);
+          expect(result.chan).to.equal('default');
+          done();
+        });
+      });
+    });
+
     describe('with priority', function() {
       it('returns the first value that can be taken', function(done) {
         var c1 = csp.chan(1);

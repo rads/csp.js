@@ -23,8 +23,17 @@ function chan(bufferOrN) {
   };
 }
 
-function altFlag() {
-  return {isActive: true};
+function AltFlag() {
+  this._isActive = true;
+}
+
+AltFlag.prototype.commit = function() {
+  this._isActive = false;
+  return true;
+}
+
+AltFlag.prototype.isActive = function() {
+  return this._isActive;
 }
 
 function AltHandler(flag, callback) {
@@ -33,11 +42,11 @@ function AltHandler(flag, callback) {
 }
 
 AltHandler.prototype.isActive = function() {
-  return this._flag.isActive;
+  return this._flag.isActive();
 };
 
 AltHandler.prototype.commit = function() {
-  this._flag.isActive = false;
+  this._flag.commit();
   return this._callback;
 }
 
@@ -207,7 +216,7 @@ var operations = {
     var len = channels.length;
     var shuffle = module.exports._shuffle;
     var order = (instruction.priority ? range(len) : shuffle(range(len)));
-    var flag = altFlag();
+    var flag = new AltFlag;
 
     for (var i = 0; i < len; i++) {
       var channel = channels[order[i]];
@@ -223,7 +232,13 @@ var operations = {
       }
     }
 
-    return {state: 'park'};
+    var hasDefault = (typeof instruction.default !== 'undefined');
+    if (hasDefault && flag.isActive() && flag.commit()) {
+      var value = {chan: 'default', value: instruction.default};
+      return {state: 'continue', value: value};
+    } else {
+      return {state: 'park'};
+    }
   }
 };
 
@@ -279,11 +294,17 @@ function put(channel, value) {
 function alts(channels, options) {
   if (!options) options = {};
 
-  return {
+  var instruction = {
     op: 'alts',
     channels: channels,
     priority: options.priority
   };
+
+  if (typeof options.default !== 'undefined') {
+    instruction.default = options.default;
+  }
+
+  return instruction;
 }
 
 function timeout(duration) {
