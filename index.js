@@ -22,20 +22,61 @@ function chan(bufferOrN) {
   };
 }
 
-function channelTake(channel, onComplete) {
+function altFlag() {
+  return {isActive: false};
+}
+
+function AltHandler(flag, callback) {
+  this._flag = flag;
+  this._callback = callback;
+}
+
+AltHandler.prototype.isActive = function() {
+  return this._flag.isActive;
+};
+
+AltHandler.prototype.commit = function() {
+  this._flag.isActive = false;
+  return this._callback;
+}
+
+function FnHandler(callback) {
+  this._callback = callback;
+}
+
+FnHandler.prototype.isActive = function() {
+  return true;
+};
+
+FnHandler.prototype.commit = function() {
+  return this._callback;
+};
+
+function channelTake(channel, handler) {
   var buffer = channel.buffer;
   var puts = channel.puts;
   var takes = channel.takes;
 
   if (buffer && buffer.contents.length) {
+    handler.commit();
     return {immediate: true, value: buffer.contents.pop()};
   } else {
+    var putter = puts.pop();
+    while (putter) {
+      if (putter.handler.isActive()) {
+        var callback = putter.handler.commit();
+        handler.commit();
+        setImmediate(callback);
+        return {immediate: true, value: putter.value};
+      } else {
+        putter = puts.pop();
+      }
+    }
+
     if (puts.length) {
       var put = puts.pop();
-      setImmediate(put.onComplete);
-      return {immediate: true, value: put.value};
     } else {
-      takes.unshift({onComplete: onComplete});
+      takes.unshift(handler);
       return {immediate: false};
     }
   }
@@ -44,7 +85,7 @@ function channelTake(channel, onComplete) {
 function takeAsync(channel, onComplete, onCaller) {
   if (typeof onCaller === 'undefined') onCaller = true;
 
-  var result = channelTake(channel, onComplete);
+  var result = channelTake(channel, new FnHandler(onComplete));
   if (result.immediate) {
     if (onCaller) {
       onComplete(result.value);
@@ -54,33 +95,40 @@ function takeAsync(channel, onComplete, onCaller) {
   }
 }
 
-function channelPut(channel, value, onComplete) {
+function channelPut(channel, value, handler) {
   var buffer = channel.buffer;
   var takes = channel.takes;
   var puts = channel.puts;
 
-  if (takes.length) {
-    var take = takes.pop();
-    setImmediate(function() { take.onComplete(value); });
-    return {immediate: true};
-  } else {
-    if (buffer && (buffer.contents.length < buffer.size)) {
-      buffer.contents.unshift(value);
+  var taker = takes.pop();
+  while (taker) {
+    if (taker.isActive()) {
+      var callback = taker.commit();
+      handler.commit();
+      setImmediate(function() { callback(value); });
       return {immediate: true};
     } else {
-      puts.unshift({
-        onComplete: onComplete,
-        value: value
-      });
-      return {immediate: false};
+      taker = takes.pop();
     }
+  }
+
+  if (buffer && (buffer.contents.length < buffer.size)) {
+    handler.commit();
+    buffer.contents.unshift(value);
+    return {immediate: true};
+  } else {
+    puts.unshift({
+      handler: handler,
+      value: value
+    });
+    return {immediate: false};
   }
 }
 
 function putAsync(channel, value, onComplete, onCaller) {
   if (typeof onCaller === 'undefined') onCaller = true;
 
-  var result = channelPut(channel, value, onComplete);
+  var result = channelPut(channel, value, new FnHandler(onComplete));
   if (result.immediate) {
     if (onCaller) {
       onComplete();
@@ -119,9 +167,10 @@ function runMachine(machine, startStep) {
 var operations = {
   take: function(machine, instruction) {
     var channel = instruction.channel;
-    var result = channelTake(channel, function(val) {
+    var handler = new FnHandler(function(val) {
       runMachine(machine, machine.next(val));
     });
+    var result = channelTake(channel, handler);
 
     if (result.immediate) {
       return {state: 'continue', value: result.value};
@@ -133,9 +182,10 @@ var operations = {
   put: function(machine, instruction) {
     var channel = instruction.channel;
     var value = instruction.value;
-    var result = channelPut(channel, value, function() {
+    var handler = new FnHandler(function() {
       runMachine(machine, machine.next());
     });
+    var result = channelPut(channel, value, handler);
 
     if (result.immediate) {
       return {state: 'continue'};
@@ -155,7 +205,7 @@ var operations = {
       if (taken) break;
 
       var channel = channels[order[i]];
-      var result = channelTake(channel, function(val) {
+      var handler = new FnHandler(function(val) {
         if (taken) return;
 
         taken = {
@@ -165,6 +215,7 @@ var operations = {
 
         runMachine(machine, machine.next(taken));
       });
+      var result = channelTake(channel, handler);
 
       if (result.immediate) {
         taken = {
