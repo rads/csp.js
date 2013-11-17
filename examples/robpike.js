@@ -38,7 +38,6 @@ function fastest(query /* , replicas... */) {
 }
 
 function google(query) {
-  var retChan = chan();
   var c = chan();
   var t = timeout(80);
 
