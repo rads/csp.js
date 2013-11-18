@@ -295,6 +295,47 @@ function unique(channel, bufOrN) {
   return out;
 }
 
+function partition(n, channel, bufOrN) {
+  if (typeof bufOrN === 'undefined') bufOrN = null;
+
+  var out = chan(bufOrN);
+
+  go(function*() {
+    var arr = new Array(n);
+    var idx = 0;
+    var val, newIdx;
+
+    while (true) {
+      val = yield take(channel);
+      if (val !== null) {
+        arr[idx] = val;
+        newIdx = (idx + 1);
+
+        if (newIdx < n) {
+          idx = newIdx;
+        } else {
+          yield put(out, arr);
+          arr = new Array(n);
+          idx = 0;
+        }
+      } else {
+        if (idx > 0) {
+          while (idx < n) {
+            arr[idx] = null;
+            idx++;
+          }
+          yield put(out, arr);
+        }
+
+        close(out);
+        break;
+      }
+    }
+  });
+
+  return out;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -317,6 +358,7 @@ module.exports = {
   intoArray: intoArray,
   takeNum: takeNum,
   unique: unique,
+  partition: partition,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
