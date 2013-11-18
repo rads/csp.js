@@ -279,13 +279,13 @@ function unique(channel, bufOrN) {
 
     while (true) {
       val = yield take(channel);
-      if (val === null) {
-        break;
-      } else {
+      if (val !== null) {
         if (val !== last) {
           yield put(out, val);
           last = val;
         }
+      } else {
+        break;
       }
     }
 
