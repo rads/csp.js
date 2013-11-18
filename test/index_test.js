@@ -423,4 +423,22 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('takeNum', function() {
+    it('takes at most n values from a channel', function(done) {
+      var c1 = csp.chan(3);
+      var take2 = csp.takeNum(2, c1);
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+
+        expect(yield csp.take(take2)).to.equal(1);
+        expect(yield csp.take(take2)).to.equal(2);
+        expect(yield csp.take(take2)).to.be.null;
+        done();
+      });
+    });
+  });
 });

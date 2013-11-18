@@ -238,6 +238,36 @@ function intoArray(channel) {
   });
 }
 
+function takeNum(n, channel, bufOrN) {
+  if (typeof bufOrN === 'undefined') bufOrN = null;
+
+  var out = chan(bufOrN);
+
+  go(function*() {
+    var x = 0;
+    var val;
+
+    while (true) {
+      if (x < n) {
+        val = yield take(channel);
+
+        if (val === null) {
+          break;
+        } else {
+          yield put(out, val);
+          x++;
+        }
+      } else {
+        break;
+      }
+    }
+
+    close(out);
+  });
+
+  return out;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -258,5 +288,6 @@ module.exports = {
   reduce: reduce,
   merge: merge,
   intoArray: intoArray,
+  takeNum: takeNum,
   _stubShuffle: goBlocks._stubShuffle
 };
