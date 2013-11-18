@@ -349,4 +349,21 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('map', function() {
+    it('applies a fn to values from multiple channels', function(done) {
+      var c1 = csp.chan(1);
+      var c2 = csp.chan(1);
+      var mapped = csp.map([c1, c2], function(v1, v2) { return v1 + v2; });
+
+      csp.go(function*() {
+        yield csp.put(c1, 42);
+        yield csp.put(c2, 43);
+        var val = yield csp.take(mapped);
+
+        expect(val).to.equal(85);
+        done();
+      });
+    });
+  });
 });

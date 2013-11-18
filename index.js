@@ -116,6 +116,72 @@ extend(MapPushChannel.prototype, {
   }
 });
 
+function map(channels /* , [bufOrN], fn */) {
+  var bufOrN, fn;
+  if (arguments.length === 2) {
+    fn = arguments[1];
+  } else if (arguments.length === 3) {
+    bufOrN = arguments[1];
+    fn = arguments[2];
+  } else {
+    throw new Error('Invalid number of arguments provided (' +
+                    arguments.length +'). Expected 2 or 3');
+  }
+
+  var chanCount = channels.length;
+  var rets = new Array(chanCount);
+  var doneCount;
+  var doneChan = chan(1);
+  var out = chan(bufOrN);
+  var done = [];
+
+  function doneFn(i) {
+    return function(val) {
+      rets[i] = val;
+      doneCount--;
+
+      if (doneCount === 0) {
+        putAsync(doneChan, rets.slice(0));
+      }
+    };
+  }
+
+  for (var i = 0; i < chanCount; i++) {
+    done[i] = doneFn(i);
+  }
+
+  go(function*() {
+    while (true) {
+      doneCount = chanCount;
+      for (var j = 0; j < chanCount; j++) {
+        try {
+          takeAsync(channels[j], done[j]);
+        } catch (e) {
+          doneCount--;
+        }
+      }
+
+      var localRets = yield take(doneChan);
+      var someNull = false;
+      for (var k = 0, l = localRets.length; k < l; k++) {
+        if (rets[k] === null) {
+          someNull = true;
+          break;
+        }
+      }
+
+      if (someNull) {
+        close(out);
+        break;
+      } else {
+        yield put(out, fn.apply(null, localRets));
+      }
+    }
+  });
+
+  return out;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -132,5 +198,6 @@ module.exports = {
   pipe: pipe,
   mapPull: mapPull,
   mapPush: mapPush,
+  map: map,
   _stubShuffle: goBlocks._stubShuffle
 };
