@@ -546,4 +546,23 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('filterPush', function() {
+    it('filters values put on the channel using a fn', function(done) {
+      var filtered = csp.chan(3);
+      var c1 = csp.filterPush(filtered, function(val) { return val !== 2; });
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+
+        expect(yield csp.take(filtered)).to.equal(1);
+        expect(yield csp.take(filtered)).to.equal(3);
+        expect(yield csp.take(filtered)).to.be.null;
+        done();
+      });
+    });
+  });
 });

@@ -412,6 +412,33 @@ function filterPull(channel /* , [bufOrN], fn */) {
   return out;
 }
 
+function filterPush(channel, fn) {
+  return new FilterPush(channel, fn);
+}
+
+function FilterPush(channel, fn) {
+  this._channel = channel;
+  this._fn = fn;
+}
+
+extend(FilterPush.prototype, {
+  take: function(handler) {
+    return this._channel.take(handler);
+  },
+
+  put: function(value, handler) {
+    if (this._fn(value)) {
+      return this._channel.put(value, handler);
+    } else {
+      return {immediate: true};
+    }
+  },
+
+  close: function() {
+    this._channel.close();
+  }
+});
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -437,6 +464,7 @@ module.exports = {
   partition: partition,
   partitionBy: partitionBy,
   filterPull: filterPull,
+  filterPush: filterPush,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
