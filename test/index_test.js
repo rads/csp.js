@@ -361,7 +361,26 @@ describe('csp', function() {
         yield csp.put(c2, 43);
         var val = yield csp.take(mapped);
 
-        expect(val).to.equal(85);
+        expect(val).to.equal(42 + 43);
+        done();
+      });
+    });
+  });
+
+  describe('reduce', function() {
+    it('reduces values coming from a channel', function(done) {
+      var c1 = csp.chan(2);
+      var reduced = csp.reduce(c1, 1, function(acc, val) {
+        return acc + val;
+      });
+
+      csp.go(function*() {
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+        var val = yield csp.take(reduced);
+
+        expect(val).to.equal(1 + 2 + 3);
         done();
       });
     });

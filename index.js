@@ -182,6 +182,21 @@ function map(channels /* , [bufOrN], fn */) {
   return out;
 }
 
+function reduce(channel, init, fn) {
+  var ret = init;
+
+  return go(function*() {
+    while (true) {
+      var val = yield take(channel);
+      if (val === null) {
+        return ret;
+      } else {
+        ret = fn(ret, val);
+      }
+    }
+  });
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -199,5 +214,6 @@ module.exports = {
   mapPull: mapPull,
   mapPush: mapPush,
   map: map,
+  reduce: reduce,
   _stubShuffle: goBlocks._stubShuffle
 };
