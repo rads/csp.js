@@ -381,6 +381,37 @@ function partitionBy(channel /* , [bufOrN], fn */) {
   return out;
 }
 
+function filterPull(channel /* , [bufOrN], fn */) {
+  var bufOrN, fn;
+  if (arguments.length === 2) {
+    fn = arguments[1];
+  } else if (arguments.length === 3) {
+    bufOrN = arguments[1];
+    fn = arguments[2];
+  } else {
+    throw new Error('Invalid number of arguments provided (' +
+                    arguments.length +'). Expected 2 or 3');
+  }
+
+  var out = chan(bufOrN);
+
+  go(function*() {
+    var val;
+
+    while (true) {
+      val = yield take(channel);
+      if (val !== null) {
+        if (fn(val)) yield put(out, val);
+      } else {
+        close(out);
+        break;
+      }
+    }
+  });
+
+  return out;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -405,6 +436,7 @@ module.exports = {
   unique: unique,
   partition: partition,
   partitionBy: partitionBy,
+  filterPull: filterPull,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
