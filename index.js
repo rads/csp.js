@@ -197,6 +197,40 @@ function reduce(channel, init, fn) {
   });
 }
 
+function merge(channels, bufOrN) {
+  if (typeof bufOrN === 'undefined') bufOrN = null;
+
+  var out = chan(bufOrN);
+
+  go(function*() {
+    var currentChans = channels;
+    var result, newChans, ch, i, j;
+
+    while (true) {
+      if (currentChans.length > 0) {
+        result = yield alts(currentChans);
+
+        if (result.value === null) {
+          newChans = [];
+
+          for (i = 0, j = currentChans.length; i < j; i++) {
+            ch = currentChans[i];
+            if (ch !== result.chan) newChans.push(ch);
+          }
+
+          currentChans = newChans;
+        } else {
+          yield put(out, result.value);
+        }
+      } else {
+        close(out);
+      }
+    }
+  });
+
+  return out;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -215,5 +249,6 @@ module.exports = {
   mapPush: mapPush,
   map: map,
   reduce: reduce,
+  merge: merge,
   _stubShuffle: goBlocks._stubShuffle
 };

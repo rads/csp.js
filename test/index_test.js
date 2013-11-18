@@ -385,4 +385,23 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('merge', function() {
+    it('combines the values from multiple channels into a single channel', function(done) {
+      var c1 = csp.chan(1);
+      var c2 = csp.chan(1);
+      var merged = csp.merge([c1, c2]);
+
+      csp.go(function*() {
+        yield csp.put(c1, 42);
+        yield csp.put(c2, 43);
+        var val1 = yield csp.take(merged);
+        var val2 = yield csp.take(merged);
+
+        expect(val1).to.equal(42);
+        expect(val2).to.equal(43);
+        done();
+      });
+    });
+  });
 });
