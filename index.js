@@ -2,7 +2,8 @@
 
 var buffers = require('./lib/buffers'),
     chans = require('./lib/channels'),
-    goBlocks = require('./lib/go_blocks');
+    goBlocks = require('./lib/go_blocks'),
+    extend = require('./lib/util').extend;
 
 var chan = chans.chan,
     buffer = chans.defaultBuffer,
@@ -52,41 +53,45 @@ function MapPullChannel(channel, fn) {
   this._fn = fn;
 }
 
-MapPullChannel.prototype.take = function(handler) {
-  var ret = this._channel.take(new MapPullHandler(handler, this._fn));
+extend(MapPullChannel.prototype, {
+  take: function(handler) {
+    var ret = this._channel.take(new MapPullHandler(handler, this._fn));
 
-  if (ret.immediate) {
-    return {immediate: true, value: this._fn(ret.value)};
-  } else {
-    return ret;
+    if (ret.immediate) {
+      return {immediate: true, value: this._fn(ret.value)};
+    } else {
+      return ret;
+    }
+  },
+
+  put: function(value, handler) {
+    return this._channel.put(value, handler);
+  },
+
+  close: function() {
+    this._channel.close(this._channel);
   }
-};
-
-MapPullChannel.prototype.put = function(value, handler) {
-  return this._channel.put(value, handler);
-};
-
-MapPullChannel.prototype.close = function() {
-  this._channel.close(this._channel);
-};
+});
 
 function MapPullHandler(handler, fn) {
   this._handler = handler;
   this._fn = fn;
 }
 
-MapPullHandler.prototype.isActive = function() {
-  return this._handler.isActive();
-};
+extend(MapPullHandler.prototype, {
+  isActive: function() {
+    return this._handler.isActive();
+  },
 
-MapPullHandler.prototype.commit = function() {
-  var self = this;
-  var callback = this._handler.commit();
+  commit: function() {
+    var self = this;
+    var callback = this._handler.commit();
 
-  return function(val) {
-    callback(val === null ? null : self._fn(val));
-  };
-};
+    return function(val) {
+      callback(val === null ? null : self._fn(val));
+    };
+  }
+});
 
 function mapPush(channel, fn) {
   return new MapPushChannel(channel, fn);
@@ -97,17 +102,19 @@ function MapPushChannel(channel, fn) {
   this._fn = fn;
 }
 
-MapPushChannel.prototype.take = function(handler) {
-  return this._channel.take(handler);
-};
+extend(MapPushChannel.prototype, {
+  take: function(handler) {
+    return this._channel.take(handler);
+  },
 
-MapPushChannel.prototype.put = function(value, handler) {
-  return this._channel.put(this._fn(value), handler);
-};
+  put: function(value, handler) {
+    return this._channel.put(this._fn(value), handler);
+  },
 
-MapPushChannel.prototype.close = function() {
-  return this._channel.close();
-};
+  close: function() {
+    return this._channel.close();
+  }
+});
 
 module.exports = {
   chan: chan,
