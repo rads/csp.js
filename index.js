@@ -268,6 +268,33 @@ function takeNum(n, channel, bufOrN) {
   return out;
 }
 
+function unique(channel, bufOrN) {
+  if (typeof bufOrN === 'undefined') bufOrN = null;
+
+  var out = chan(bufOrN);
+
+  go(function*() {
+    var last = null;
+    var val;
+
+    while (true) {
+      val = yield take(channel);
+      if (val === null) {
+        break;
+      } else {
+        if (val !== last) {
+          yield put(out, val);
+          last = val;
+        }
+      }
+    }
+
+    close(out);
+  });
+
+  return out;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -289,5 +316,8 @@ module.exports = {
   merge: merge,
   intoArray: intoArray,
   takeNum: takeNum,
+  unique: unique,
+
+  // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
 };

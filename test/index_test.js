@@ -441,4 +441,25 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('unique', function() {
+    it('skips consecutive values from a channel', function(done) {
+      var c1 = csp.chan(4);
+      var uniq = csp.unique(c1);
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+
+        expect(yield csp.take(uniq)).to.equal(1);
+        expect(yield csp.take(uniq)).to.equal(2);
+        expect(yield csp.take(uniq)).to.equal(3);
+        expect(yield csp.take(uniq)).to.be.null;
+        done();
+      });
+    });
+  });
 });
