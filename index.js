@@ -238,7 +238,7 @@ function intoArray(channel) {
   });
 }
 
-function takeNum(n, channel, bufOrN) {
+function takeNum(channel, n, bufOrN) {
   if (typeof bufOrN === 'undefined') bufOrN = null;
 
   var out = chan(bufOrN);
@@ -295,7 +295,7 @@ function unique(channel, bufOrN) {
   return out;
 }
 
-function partition(n, channel, bufOrN) {
+function partition(channel, n, bufOrN) {
   if (typeof bufOrN === 'undefined') bufOrN = null;
 
   var out = chan(bufOrN);

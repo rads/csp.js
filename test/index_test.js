@@ -427,7 +427,7 @@ describe('csp', function() {
   describe('takeNum', function() {
     it('takes at most n values from a channel', function(done) {
       var c1 = csp.chan(3);
-      var take2 = csp.takeNum(2, c1);
+      var take2 = csp.takeNum(c1, 2);
 
       csp.go(function*() {
         yield csp.put(c1, 1);
@@ -466,7 +466,7 @@ describe('csp', function() {
   describe('partition', function() {
     it('puts arrays of length N on a channel containing values from a source', function(done) {
       var c1 = csp.chan(5);
-      var part = csp.partition(2, c1);
+      var part = csp.partition(c1, 2);
 
       csp.go(function*() {
         for (var i = 0; i < 5; i++) {
