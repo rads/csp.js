@@ -489,6 +489,40 @@ describe('csp', function() {
         expect(val3.length).to.equal(2);
         expect(val3[0]).to.equal(4);
         expect(val3[1]).to.be.null;
+
+        done();
+      });
+    });
+  });
+
+  describe('partitionBy', function() {
+    it('partitions channel values into arrays using a fn', function(done) {
+      var c1 = csp.chan(5);
+      var part = csp.partitionBy(c1, function(val) {
+        return (val <= 1 || val >= 3);
+      });
+
+      csp.go(function*() {
+        for (var i = 0; i < 5; i++) {
+          yield csp.put(c1, i);
+        }
+        csp.close(c1);
+
+        var val1 = yield csp.take(part);
+        var val2 = yield csp.take(part);
+        var val3 = yield csp.take(part);
+
+        expect(val1.length).to.equal(2);
+        expect(val1[0]).to.equal(0);
+        expect(val1[1]).to.equal(1);
+
+        expect(val2.length).to.equal(1);
+        expect(val2[0]).to.equal(2);
+
+        expect(val3.length).to.equal(2);
+        expect(val3[0]).to.equal(3);
+        expect(val3[1]).to.equal(4);
+
         done();
       });
     });
