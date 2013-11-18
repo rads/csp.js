@@ -404,4 +404,23 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('intoArray', function() {
+    it('pushes the values from channel into an array', function(done) {
+      var c1 = csp.chan(3);
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+        var vals = yield csp.take(csp.intoArray(c1));
+
+        expect(vals[0]).to.equal(1);
+        expect(vals[1]).to.equal(2);
+        expect(vals[2]).to.equal(3);
+        done();
+      });
+    });
+  });
 });

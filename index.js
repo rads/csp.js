@@ -231,6 +231,13 @@ function merge(channels, bufOrN) {
   return out;
 }
 
+function intoArray(channel) {
+  return reduce(channel, [], function(arr, val) {
+    arr.push(val);
+    return arr;
+  });
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -250,5 +257,6 @@ module.exports = {
   map: map,
   reduce: reduce,
   merge: merge,
+  intoArray: intoArray,
   _stubShuffle: goBlocks._stubShuffle
 };
