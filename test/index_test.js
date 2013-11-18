@@ -478,10 +478,15 @@ describe('csp', function() {
         var val2 = yield csp.take(part);
         var val3 = yield csp.take(part);
 
+        expect(val1.length).to.equal(2);
         expect(val1[0]).to.equal(0);
         expect(val1[1]).to.equal(1);
+
+        expect(val2.length).to.equal(2);
         expect(val2[0]).to.equal(2);
         expect(val2[1]).to.equal(3);
+
+        expect(val3.length).to.equal(2);
         expect(val3[0]).to.equal(4);
         expect(val3[1]).to.be.null;
         done();
