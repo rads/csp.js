@@ -565,4 +565,84 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('removePull', function() {
+    it('removes values from a source channel using a fn', function(done) {
+      var c1 = csp.chan(3);
+      var removed = csp.removePull(c1, function(val) { return val !== 2; });
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+
+        expect(yield csp.take(removed)).to.equal(2);
+        expect(yield csp.take(removed)).to.be.null;
+        done();
+      });
+    });
+  });
+
+  describe('removePush', function() {
+    it('removes values put on the channel using a fn', function(done) {
+      var removed = csp.chan(3);
+      var c1 = csp.removePush(removed, function(val) { return val !== 2; });
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+
+        expect(yield csp.take(removed)).to.equal(2);
+        expect(yield csp.take(removed)).to.be.null;
+        done();
+      });
+    });
+  });
+
+  describe('mapcatPull', function() {
+    it('mapcats values coming from a channel', function(done) {
+      var c1 = csp.chan(2);
+      var mcat = csp.mapcatPull(c1, function(val) {
+        return [val, val + 1];
+      });
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+
+        expect(yield csp.take(mcat)).to.equal(1);
+        expect(yield csp.take(mcat)).to.equal(2);
+        expect(yield csp.take(mcat)).to.equal(3);
+        expect(yield csp.take(mcat)).to.equal(4);
+        expect(yield csp.take(mcat)).to.be.null;
+        done();
+      });
+    });
+  });
+
+  describe('mapcatPush', function() {
+    it('mapcats values coming from a channel', function(done) {
+      var mcat = csp.chan(2);
+      var c1 = csp.mapcatPush(mcat, function(val) {
+        return [val, val + 1];
+      });
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 3);
+        csp.close(c1);
+
+        expect(yield csp.take(mcat)).to.equal(1);
+        expect(yield csp.take(mcat)).to.equal(2);
+        expect(yield csp.take(mcat)).to.equal(3);
+        expect(yield csp.take(mcat)).to.equal(4);
+        expect(yield csp.take(mcat)).to.be.null;
+        done();
+      });
+    });
+  });
 });

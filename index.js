@@ -439,6 +439,89 @@ extend(FilterPush.prototype, {
   }
 });
 
+function complement(fn) {
+  return function() {
+    return !fn.apply(null, arguments);
+  };
+}
+
+function removePull(channel /* , [bufOrN], fn */) {
+  var bufOrN, fn;
+  if (arguments.length === 2) {
+    fn = arguments[1];
+  } else if (arguments.length === 3) {
+    bufOrN = arguments[1];
+    fn = arguments[2];
+  } else {
+    throw new Error('Invalid number of arguments provided (' +
+                    arguments.length +'). Expected 2 or 3');
+  }
+
+
+  if (bufOrN) {
+    return filterPull(channel, bufOrN, complement(fn));
+  } else {
+    return filterPull(channel, complement(fn));
+  }
+}
+
+function removePush(channel, fn) {
+  return filterPush(channel, complement(fn));
+}
+
+function mapcat_(inChan, outChan, fn) {
+  return go(function*() {
+    var val, vals, i, j;
+
+    while (true) {
+      val = yield take(inChan);
+      if (val !== null) {
+        vals = fn(val);
+        for (i = 0, j = vals.length; i < j; i++) {
+          yield put(outChan, vals[i]);
+        }
+      } else {
+        close(outChan);
+        break;
+      }
+    }
+  });
+}
+
+function mapcatPull(inChan /* , [bufOrN], fn */) {
+  var bufOrN, fn;
+  if (arguments.length === 2) {
+    fn = arguments[1];
+  } else if (arguments.length === 3) {
+    bufOrN = arguments[1];
+    fn = arguments[2];
+  } else {
+    throw new Error('Invalid number of arguments provided (' +
+                    arguments.length +'). Expected 2 or 3');
+  }
+
+  var outChan = chan(bufOrN);
+  mapcat_(inChan, outChan, fn);
+  return outChan;
+}
+
+function mapcatPush(outChan /* , [bufOrN], fn */) {
+  var bufOrN, fn;
+  if (arguments.length === 2) {
+    fn = arguments[1];
+  } else if (arguments.length === 3) {
+    bufOrN = arguments[1];
+    fn = arguments[2];
+  } else {
+    throw new Error('Invalid number of arguments provided (' +
+                    arguments.length +'). Expected 2 or 3');
+  }
+
+  var inChan = chan(bufOrN);
+  mapcat_(inChan, outChan, fn);
+  return inChan;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -465,6 +548,10 @@ module.exports = {
   partitionBy: partitionBy,
   filterPull: filterPull,
   filterPush: filterPush,
+  removePull: removePull,
+  removePush: removePush,
+  mapcatPull: mapcatPull,
+  mapcatPush: mapcatPush,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
