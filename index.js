@@ -569,6 +569,15 @@ function ontoChan(channel, array, shouldClose) {
   });
 }
 
+function toChan(array) {
+  var len = array.length;
+  var channel = chan((len > 100) ? 100 : len);
+
+  ontoChan(channel, array);
+
+  return channel;
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -601,6 +610,7 @@ module.exports = {
   mapcatPush: mapcatPush,
   split: split,
   ontoChan: ontoChan,
+  toChan: toChan,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle

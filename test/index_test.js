@@ -700,4 +700,19 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('toChan', function() {
+    it('creates a channel from an array of values', function(done) {
+      var c1 = csp.toChan([1, 2, 3]);
+
+      csp.go(function*() {
+        expect(yield csp.take(c1)).to.equal(1);
+        expect(yield csp.take(c1)).to.equal(2);
+        expect(yield csp.take(c1)).to.equal(3);
+        expect(yield csp.take(c1)).to.be.null;
+
+        done();
+      });
+    });
+  });
 });
