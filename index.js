@@ -116,7 +116,7 @@ extend(MapPushChannel.prototype, {
   }
 });
 
-function map(channels /* , [bufOrN], fn */) {
+function map(channels /* , [bufOrN,] fn */) {
   var bufOrN, fn;
   if (arguments.length === 2) {
     fn = arguments[1];
@@ -338,7 +338,7 @@ function partition(channel, n, bufOrN) {
 
 var NOTHING = new Object;
 
-function partitionBy(channel /* , [bufOrN], fn */) {
+function partitionBy(channel /* , [bufOrN,] fn */) {
   var bufOrN, fn;
   if (arguments.length === 2) {
     fn = arguments[1];
@@ -381,7 +381,7 @@ function partitionBy(channel /* , [bufOrN], fn */) {
   return out;
 }
 
-function filterPull(channel /* , [bufOrN], fn */) {
+function filterPull(channel /* , [bufOrN,] fn */) {
   var bufOrN, fn;
   if (arguments.length === 2) {
     fn = arguments[1];
@@ -445,7 +445,7 @@ function complement(fn) {
   };
 }
 
-function removePull(channel /* , [bufOrN], fn */) {
+function removePull(channel /* , [bufOrN,] fn */) {
   var bufOrN, fn;
   if (arguments.length === 2) {
     fn = arguments[1];
@@ -488,7 +488,7 @@ function mapcat_(inChan, outChan, fn) {
   });
 }
 
-function mapcatPull(inChan /* , [bufOrN], fn */) {
+function mapcatPull(inChan /* , [bufOrN,] fn */) {
   var bufOrN, fn;
   if (arguments.length === 2) {
     fn = arguments[1];
@@ -505,7 +505,7 @@ function mapcatPull(inChan /* , [bufOrN], fn */) {
   return outChan;
 }
 
-function mapcatPush(outChan /* , [bufOrN], fn */) {
+function mapcatPush(outChan /* , [bufOrN,] fn */) {
   var bufOrN, fn;
   if (arguments.length === 2) {
     fn = arguments[1];
@@ -522,7 +522,7 @@ function mapcatPush(outChan /* , [bufOrN], fn */) {
   return inChan;
 }
 
-function split(channel /* , [passBuffOrN, failBufOrN,] fn */) {
+function split(channel /* , [passBufOrN, failBufOrN,] fn */) {
   var passBufOrN, failBufOrN, fn;
   if (arguments.length === 2) {
     fn = arguments[1];
