@@ -7,7 +7,7 @@ all: test/browser_tests.js examples/build/robpike.js examples/build/timeout.js e
 
 clean:
 	rm -rf examples/build/*
-	rm csp.js csp.min.js test/browser_tests.js
+	rm -f csp.js csp.min.js test/browser_tests.js
 
 csp.js: index.js lib
 	$(COMPILER_STANDALONE) index.js > csp.js
