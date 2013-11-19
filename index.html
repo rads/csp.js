@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>CSP.js by rads</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">CSP.js</h1>
+        <p class="header">CSP for vanilla JavaScript.</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/rads/csp.js/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/rads/csp.js/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/rads/csp.js">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/rads">rads</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a name="cspjs" class="anchor" href="#cspjs"><span class="octicon octicon-link"></span></a>CSP.js</h1>
+
+<p>This library provides CSP primitives for vanilla JavaScript. If you've used Clojure's <a href="https://github.com/clojure/core.async">core.async</a> before, picking up CSP.js is easy.</p>
+
+<p>Much thanks to the <a href="https://github.com/clojure/core.async/graphs/contributors">contributors of core.async</a>. Most of this library is a direct translation of core.async's Clojure code to JavaScript.</p>
+
+<h2>
+<a name="example" class="anchor" href="#example"><span class="octicon octicon-link"></span></a>Example</h2>
+
+<p>This example can be found in <a href="https://github.com/rads/csp.js/blob/master/examples/search.js">examples/search.js</a>.</p>
+
+<pre><code>// This function simulates a search request to a remote source, such as an HTTP
+// request to Google.
+function fakeRemoteSearch(query) {
+  var latency = (Math.random() * 200);
+  return CSP.go(function*() {
+    yield CSP.take(CSP.timeout(latency));
+    return {query: query, latency: latency};
+  });
+}
+
+function performSearch(n) {
+  return CSP.go(function*() {
+    // Closes after 100 ms.
+    var timeout = CSP.timeout(100);
+    // Provides a value after 0-200 ms.
+    var search = fakeRemoteSearch('javascript ' + n);
+    // Choose whatever channel provides a value or closes first.
+    var result = yield CSP.alts([search, timeout]);
+
+    if (result.chan === search) {
+      return result.value;
+    } else {
+      return 'timeout';
+    }
+  });
+}
+
+// On average, half the searches will complete and half will time out.
+CSP.go(function*() {
+  for (var i = 0; i &lt; 10; i++) {
+    console.log(yield CSP.take(performSearch(i)));
+  }
+});
+</code></pre>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>CSP.js requires ES6 generators, which are not supported in browsers or in Node 0.10.x or below. Firefox has built-in support only for an old version of generators which are not compatible with CSP.js.</p>
+
+<p>If you want to use this library in the browser or any version of Node.js before 0.11.x, you'll have to compile your code with <a href="https://github.com/facebook/regenerator">Regenerator</a> and include its runtime. For example, if you want to run the search example, you use it like this:</p>
+
+<pre><code>regenerator examples/search.js &gt; examples/build/search.js
+</code></pre>
+
+<p>You also have to include the Regenerator runtime on the page somewhere. The runtime file is bundled with this repository as <code>regenerator.runtime.js</code> and <code>regenerator.runtime.min.js</code>. These are merely copies of the runtime files in the Regenerator repository. CSP.js has been tested with Regenerator version 0.2.10. In the end, your script tags look something like this:</p>
+
+<pre><code>&lt;script src="regenerator.runtime.min.js"&gt;&lt;/script&gt;
+&lt;script src="csp.min.js"&gt;&lt;/script&gt;
+&lt;script src="examples/search.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>Of course, if you're using this library in production, you'll want to concatenate all those into a single file.</p>
+
+<p>If you want to use this library in Node 0.11.x or above, you don't need any compilation or an extra runtime, but you do need to set a command-line option:</p>
+
+<pre><code>node --harmony-generators examples/search.js
+</code></pre>
+
+<h2>
+<a name="api" class="anchor" href="#api"><span class="octicon octicon-link"></span></a>API</h2>
+
+<p>CSP.js is a faithful port of core.async in both API and implementation.</p>
+
+<p>Documentation is still in-progress. For more details, check the <a href="https://github.com/rads/csp.js/blob/master/test/index_test.js">unit tests</a> and <a href="http://clojure.github.io/core.async/">core.async API docs</a> for now.</p>
+
+<h3>
+<a name="gofunction---" class="anchor" href="#gofunction---"><span class="octicon octicon-link"></span></a>go(function*() { ... })</h3>
+
+<h3>
+<a name="yield-takechannel" class="anchor" href="#yield-takechannel"><span class="octicon octicon-link"></span></a>yield take(channel)</h3>
+
+<h3>
+<a name="yield-putchannel-value" class="anchor" href="#yield-putchannel-value"><span class="octicon octicon-link"></span></a>yield put(channel, value)</h3>
+
+<h3>
+<a name="takeasyncchannel-value-oncomplete" class="anchor" href="#takeasyncchannel-value-oncomplete"><span class="octicon octicon-link"></span></a>takeAsync(channel, value, onComplete)</h3>
+
+<h3>
+<a name="putasyncchannel-value-oncomplete" class="anchor" href="#putasyncchannel-value-oncomplete"><span class="octicon octicon-link"></span></a>putAsync(channel, value, onComplete)</h3>
+
+<h3>
+<a name="closechannel" class="anchor" href="#closechannel"><span class="octicon octicon-link"></span></a>close(channel)</h3>
+
+<h3>
+<a name="timeoutduration" class="anchor" href="#timeoutduration"><span class="octicon octicon-link"></span></a>timeout(duration)</h3>
+
+<h3>
+<a name="pipefrom-to--shouldclose" class="anchor" href="#pipefrom-to--shouldclose"><span class="octicon octicon-link"></span></a>pipe(from, to [, shouldClose])</h3>
+
+<h3>
+<a name="mappullchannel-fn" class="anchor" href="#mappullchannel-fn"><span class="octicon octicon-link"></span></a>mapPull(channel, fn)</h3>
+
+<h3>
+<a name="mappushchannel-fn" class="anchor" href="#mappushchannel-fn"><span class="octicon octicon-link"></span></a>mapPush(channel, fn)</h3>
+
+<h3>
+<a name="mapchannels-buforn-fn" class="anchor" href="#mapchannels-buforn-fn"><span class="octicon octicon-link"></span></a>map(channels, [bufOrN,] fn)</h3>
+
+<h3>
+<a name="reducechannel-init-fn" class="anchor" href="#reducechannel-init-fn"><span class="octicon octicon-link"></span></a>reduce(channel, init, fn)</h3>
+
+<h3>
+<a name="mergechannel--buforn" class="anchor" href="#mergechannel--buforn"><span class="octicon octicon-link"></span></a>merge(channel [, bufOrN])</h3>
+
+<h3>
+<a name="intoarraychannel" class="anchor" href="#intoarraychannel"><span class="octicon octicon-link"></span></a>intoArray(channel)</h3>
+
+<h3>
+<a name="takenumchannel-n--buforn" class="anchor" href="#takenumchannel-n--buforn"><span class="octicon octicon-link"></span></a>takeNum(channel, n [, bufOrN])</h3>
+
+<h3>
+<a name="uniquechannel--buforn" class="anchor" href="#uniquechannel--buforn"><span class="octicon octicon-link"></span></a>unique(channel [, bufOrN])</h3>
+
+<h3>
+<a name="partitionchannel-n--buforn" class="anchor" href="#partitionchannel-n--buforn"><span class="octicon octicon-link"></span></a>partition(channel, n [, bufOrN])</h3>
+
+<h3>
+<a name="partitionbychannel-buforn-fn" class="anchor" href="#partitionbychannel-buforn-fn"><span class="octicon octicon-link"></span></a>partitionBy(channel, [bufOrN,] fn)</h3>
+
+<h3>
+<a name="filterpullchannel-buforn-fn" class="anchor" href="#filterpullchannel-buforn-fn"><span class="octicon octicon-link"></span></a>filterPull(channel, [bufOrN,] fn)</h3>
+
+<h3>
+<a name="filterpushchannel-fn" class="anchor" href="#filterpushchannel-fn"><span class="octicon octicon-link"></span></a>filterPush(channel, fn)</h3>
+
+<h3>
+<a name="removepullchannel-buforn-fn" class="anchor" href="#removepullchannel-buforn-fn"><span class="octicon octicon-link"></span></a>removePull(channel, [bufOrN,] fn)</h3>
+
+<h3>
+<a name="removepushchannel-fn" class="anchor" href="#removepushchannel-fn"><span class="octicon octicon-link"></span></a>removePush(channel, fn)</h3>
+
+<h3>
+<a name="mapcatpullchannel-buforn-fn" class="anchor" href="#mapcatpullchannel-buforn-fn"><span class="octicon octicon-link"></span></a>mapcatPull(channel, [bufOrN,] fn)</h3>
+
+<h3>
+<a name="mapcatpushchannel-buforn-fn" class="anchor" href="#mapcatpushchannel-buforn-fn"><span class="octicon octicon-link"></span></a>mapcatPush(channel, [bufOrN,] fn)</h3>
+
+<h3>
+<a name="splitchannel-passbuforn-failbuforn-fn" class="anchor" href="#splitchannel-passbuforn-failbuforn-fn"><span class="octicon octicon-link"></span></a>split(channel, [passBufOrN, failBufOrN,] fn)</h3>
+
+<h3>
+<a name="ontochanchannel-array--shouldclose" class="anchor" href="#ontochanchannel-array--shouldclose"><span class="octicon octicon-link"></span></a>ontoChan(channel, array [, shouldClose])</h3>
+
+<h3>
+<a name="tochanarray" class="anchor" href="#tochanarray"><span class="octicon octicon-link"></span></a>toChan(array)</h3>
+
+<h2>
+<a name="todo" class="anchor" href="#todo"><span class="octicon octicon-link"></span></a>TODO</h2>
+
+<ul>
+<li>More documentation</li>
+<li>More functions
+
+<ul>
+<li>mult, tap, untap, untapAll</li>
+<li>mix, admix, unmix, unmixAll, toggle, soloMode</li>
+<li>pub, sub, unsub, unsubAll</li>
+</ul>
+</li>
+<li>Optimize for speed and file size</li>
+<li>Test for compatibility in IE</li>
+</ul><h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>CSP.js is released under the <a href="http://www.opensource.org/licenses/MIT">MIT License</a>.</p>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
