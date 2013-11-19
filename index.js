@@ -522,6 +522,41 @@ function mapcatPush(outChan /* , [bufOrN], fn */) {
   return inChan;
 }
 
+function split(channel /* , [passBuffOrN, failBufOrN,] fn */) {
+  var passBufOrN, failBufOrN, fn;
+  if (arguments.length === 2) {
+    fn = arguments[1];
+  } else if (arguments.length === 4) {
+    passBufOrN = arguments[1];
+    failBufOrN = arguments[2];
+    fn = arguments[3];
+  } else {
+    throw new Error('Invalid number of arguments provided (' +
+                    arguments.length +'). Expected 2 or 4');
+  }
+
+  var pass = chan(passBufOrN);
+  var fail = chan(failBufOrN);
+
+  go(function*() {
+    var val, dest;
+
+    while (true) {
+      val = yield take(channel);
+      if (val !== null) {
+        dest = (fn(val) ? pass : fail);
+        yield put(dest, val);
+      } else {
+        close(pass);
+        close(fail);
+        break;
+      }
+    }
+  });
+
+  return {pass: pass, fail: fail};
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -552,6 +587,7 @@ module.exports = {
   removePush: removePush,
   mapcatPull: mapcatPull,
   mapcatPush: mapcatPush,
+  split: split,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle

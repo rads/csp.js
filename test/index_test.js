@@ -645,4 +645,25 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('split', function() {
+    it('creates two channels from one using a predicate', function(done) {
+      var c1 = csp.chan(2);
+      var chans = csp.split(c1, 1, 1, function(val) { return val >= 0; });
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, -1);
+        csp.close(c1);
+
+        expect(yield csp.take(chans.pass)).to.equal(1);
+        expect(yield csp.take(chans.pass)).to.be.null;
+
+        expect(yield csp.take(chans.fail)).to.equal(-1);
+        expect(yield csp.take(chans.fail)).to.be.null;
+
+        done();
+      });
+    });
+  });
 });
