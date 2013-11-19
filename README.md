@@ -4,26 +4,6 @@ This library provides CSP primitives for vanilla JavaScript. If you've used Cloj
 
 Much thanks to the [contributors of core.async](https://github.com/clojure/core.async/graphs/contributors). Most of this library is a direct translation of core.async's Clojure code to JavaScript.
 
-## Usage
-
-CSP.js requires ES6 generators, which are not supported in browsers or in Node 0.10.x or below. Firefox has built-in support only for an old version of generators which are not compatible with CSP.js.
-
-If you want to use this library in the browser or any version of Node.js before 0.11.x, you'll have to compile your code with [Regenerator](https://github.com/facebook/regenerator) and include its runtime. For example, if you want to run the search example, you use it like this:
-
-    regenerator examples/search.js > examples/build/search.js
-
-You also have to include the Regenerator runtime on the page somewhere. The runtime file is bundled with this repository as `regenerator.runtime.js` and `regenerator.runtime.min.js`. These are merely copies of the runtime files in the Regenerator repository. CSP.js has been tested with Regenerator version 0.2.10. In the end, your script tags look something like this:
-
-    <script src="regenerator.runtime.min.js"></script>
-    <script src="csp.min.js"></script>
-    <script src="examples/search.js"></script>
-
-Of course, if you're using this library in production, you'll want to concatenate all those into a single file.
-
-If you want to use this library in Node 0.11.x or above, you don't need any compilation or an extra runtime, but you do need to set a command-line option:
-
-    node --harmony-generators examples/search.js
-
 ## Example
 
 This example can be found in [examples/search.js](https://github.com/rads/csp.js/blob/master/examples/search.js).
@@ -61,6 +41,26 @@ This example can be found in [examples/search.js](https://github.com/rads/csp.js
         console.log(yield CSP.take(performSearch(i)));
       }
     });
+
+## Usage
+
+CSP.js requires ES6 generators, which are not supported in browsers or in Node 0.10.x or below. Firefox has built-in support only for an old version of generators which are not compatible with CSP.js.
+
+If you want to use this library in the browser or any version of Node.js before 0.11.x, you'll have to compile your code with [Regenerator](https://github.com/facebook/regenerator) and include its runtime. For example, if you want to run the search example, you use it like this:
+
+    regenerator examples/search.js > examples/build/search.js
+
+You also have to include the Regenerator runtime on the page somewhere. The runtime file is bundled with this repository as `regenerator.runtime.js` and `regenerator.runtime.min.js`. These are merely copies of the runtime files in the Regenerator repository. CSP.js has been tested with Regenerator version 0.2.10. In the end, your script tags look something like this:
+
+    <script src="regenerator.runtime.min.js"></script>
+    <script src="csp.min.js"></script>
+    <script src="examples/search.js"></script>
+
+Of course, if you're using this library in production, you'll want to concatenate all those into a single file.
+
+If you want to use this library in Node 0.11.x or above, you don't need any compilation or an extra runtime, but you do need to set a command-line option:
+
+    node --harmony-generators examples/search.js
 
 ## API
 
