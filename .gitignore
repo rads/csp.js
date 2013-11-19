@@ -1,5 +1,3 @@
 node_modules/*
 test/browser_tests.js
 examples/build/*
-csp.js
-csp.min.js
