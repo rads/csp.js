@@ -1,7 +1,7 @@
 {
   "name": "csp.js",
-  "version": "0.0.5",
-  "description": "\"CSP for vanilla JavaScript.\"",
+  "version": "0.1.0",
+  "description": "CSP for vanilla JavaScript.",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -34,9 +34,8 @@
     "browserify": "2.35.1",
     "regenerator": "0.2.10",
     "regeneratorify": "git+https://github.com/rads/regeneratorify#remove-runtime",
-    "jshint": "~2.3.0"
-  },
-  "dependencies": {
-    "setimmediate": "1.0.1"
+    "regeneratorify-standalone": "0.0.1",
+    "jshint": "~2.3.0",
+    "uglify-js": "~2.4.3"
   }
 }

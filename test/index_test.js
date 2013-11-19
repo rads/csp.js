@@ -4,7 +4,6 @@ var chai = require('chai'),
     sinon = require('sinon'),
     csp = require('../');
 
-require('setimmediate');
 chai.use(sinonChai);
 
 describe('csp', function() {
@@ -19,7 +18,7 @@ describe('csp', function() {
     expect(putCallback).to.not.have.been.called;
     expect(takeCallback).to.not.have.been.called;
 
-    setImmediate(function() {
+    process.nextTick(function() {
       expect(putCallback).to.have.been.calledOnce;
       expect(putCallback).to.have.been.calledWithExactly();
 
@@ -258,11 +257,11 @@ describe('csp', function() {
       });
 
       clock.tick(499);
-      setImmediate(function() {
+      process.nextTick(function() {
         expect(val).to.be.undefined;
 
         clock.tick(501);
-        setImmediate(function() {
+        process.nextTick(function() {
           expect(val).to.be.null;
           done();
         });

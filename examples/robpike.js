@@ -1,10 +1,9 @@
-var csp = require('../'),
-    chan = csp.chan,
-    go = csp.go,
-    take = csp.take,
-    put = csp.put,
-    alts = csp.alts,
-    timeout = csp.timeout;
+var chan = CSP.chan,
+    go = CSP.go,
+    take = CSP.take,
+    put = CSP.put,
+    alts = CSP.alts,
+    timeout = CSP.timeout;
 
 function randInt(size) {
   return Math.floor(Math.random() * size);

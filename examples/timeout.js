@@ -1,7 +1,6 @@
-var csp = require('../'),
-    go = csp.go,
-    timeout = csp.timeout,
-    take = csp.take;
+var go = CSP.go,
+    timeout = CSP.timeout,
+    take = CSP.take;
 
 go(function*() {
   yield take(timeout(1000));
