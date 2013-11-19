@@ -6,7 +6,7 @@ Much thanks to the [contributors of core.async](https://github.com/clojure/core.
 
 ## Example
 
-This example can be found in [examples/search.js](https://github.com/rads/csp.js/blob/master/examples/search.js).
+The following example can be found in [examples/search.js](https://github.com/rads/csp.js/blob/master/examples/search.js). You can try it out in the browser [at this page](http://rads.github.io/csp.js/examples/search.html) (make sure to have your console open).
 
     // This function simulates a search request to a remote source, such as an HTTP
     // request to Google.
