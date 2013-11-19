@@ -666,4 +666,38 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('ontoChan', function() {
+    it('puts the contents of an array onto a channel and closes it', function(done) {
+      var c1 = csp.chan(3);
+      csp.ontoChan(c1, [1, 2, 3]);
+
+      csp.go(function*() {
+        expect(yield csp.take(c1)).to.equal(1);
+        expect(yield csp.take(c1)).to.equal(2);
+        expect(yield csp.take(c1)).to.equal(3);
+
+        yield csp.put(c1, 4);
+        expect(yield csp.take(c1)).to.be.null;;
+
+        done();
+      });
+    });
+
+    it('puts the contents of an array onto a channel and leaves it open', function(done) {
+      var c1 = csp.chan(3);
+      csp.ontoChan(c1, [1, 2, 3], false);
+
+      csp.go(function*() {
+        expect(yield csp.take(c1)).to.equal(1);
+        expect(yield csp.take(c1)).to.equal(2);
+        expect(yield csp.take(c1)).to.equal(3);
+
+        yield csp.put(c1, 4);
+        expect(yield csp.take(c1)).to.equal(4);
+
+        done();
+      });
+    });
+  });
 });

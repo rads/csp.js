@@ -557,6 +557,18 @@ function split(channel /* , [passBuffOrN, failBufOrN,] fn */) {
   return {pass: pass, fail: fail};
 }
 
+function ontoChan(channel, array, shouldClose) {
+  if (typeof shouldClose === 'undefined') shouldClose = true;
+
+  go(function*() {
+    for (var i = 0, j = array.length; i < j; i++) {
+      yield put(channel, array[i]);
+    }
+
+    if (shouldClose) close(channel);
+  });
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -588,6 +600,7 @@ module.exports = {
   mapcatPull: mapcatPull,
   mapcatPush: mapcatPush,
   split: split,
+  ontoChan: ontoChan,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
