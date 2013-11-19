@@ -80,6 +80,12 @@ Documentation is still in-progress. For more details, check the [unit tests](htt
 
 ### close(channel)
 
+### buffer(n)
+
+### droppingBuffer(n)
+
+### slidingBuffer(n)
+
 ### timeout(duration)
 
 ### pipe(from, to [, shouldClose])
