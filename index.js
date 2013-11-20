@@ -3,7 +3,7 @@
 var buffers = require('./lib/buffers'),
     chans = require('./lib/channels'),
     goBlocks = require('./lib/go_blocks'),
-    extend = require('./lib/util').extend;
+    util = require('./lib/util');
 
 var chan = chans.chan,
     buffer = chans.defaultBuffer,
@@ -53,7 +53,7 @@ function MapPullChannel(channel, fn) {
   this._fn = fn;
 }
 
-extend(MapPullChannel.prototype, {
+util.extend(MapPullChannel.prototype, {
   take: function(handler) {
     var ret = this._channel.take(new MapPullHandler(handler, this._fn));
 
@@ -78,7 +78,7 @@ function MapPullHandler(handler, fn) {
   this._fn = fn;
 }
 
-extend(MapPullHandler.prototype, {
+util.extend(MapPullHandler.prototype, {
   isActive: function() {
     return this._handler.isActive();
   },
@@ -102,7 +102,7 @@ function MapPushChannel(channel, fn) {
   this._fn = fn;
 }
 
-extend(MapPushChannel.prototype, {
+util.extend(MapPushChannel.prototype, {
   take: function(handler) {
     return this._channel.take(handler);
   },
@@ -421,7 +421,7 @@ function FilterPush(channel, fn) {
   this._fn = fn;
 }
 
-extend(FilterPush.prototype, {
+util.extend(FilterPush.prototype, {
   take: function(handler) {
     return this._channel.take(handler);
   },
