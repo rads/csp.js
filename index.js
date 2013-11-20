@@ -336,7 +336,7 @@ function partition(channel, n, bufOrN) {
   return out;
 }
 
-var NOTHING = new Object;
+var NOTHING = {};
 
 function partitionBy(channel /* , [bufOrN,] fn */) {
   var bufOrN, fn;
