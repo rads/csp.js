@@ -1,9 +1,11 @@
 {
   "name": "csp.js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CSP for vanilla JavaScript.",
   "main": "index.js",
   "directories": {
+    "lib": "lib",
+    "example": "examples",
     "test": "test"
   },
   "scripts": {
