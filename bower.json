@@ -1,7 +1,7 @@
 {
   "name": "csp.js",
   "main": "csp.js",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "homepage": "https://rads.github.io/csp.js/",
   "authors": [
     "Radford Smith <contact@radsmith.com>"

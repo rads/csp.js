@@ -1,5 +1,13 @@
 # Changes to CSP.js
 
+## 0.2.3
+
+- Update changelog and version comments
+
+## 0.2.2
+
+- Change bower.json main to "csp.js"
+
 ## 0.2.1
 
 - Add homepage to package.json

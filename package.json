@@ -1,6 +1,6 @@
 {
   "name": "csp.js",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "CSP for vanilla JavaScript.",
   "homepage": "http://rads.github.io/csp.js/",
   "main": "index.js",
