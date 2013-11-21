@@ -715,4 +715,95 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('mult/tap/untap/untapAll', function() {
+    describe('tap', function() {
+      it('sends multiple channels the values from a source channel', function(done) {
+        var source = csp.chan(1);
+        var mult = csp.mult(source);
+        var tap1 = csp.chan();
+        var tap2 = csp.chan();
+
+        csp.tap(mult, tap1);
+        csp.tap(mult, tap2);
+
+        csp.go(function*() {
+          yield csp.put(source, 42);
+
+          expect(yield csp.take(tap1)).to.equal(42);
+          expect(yield csp.take(tap2)).to.equal(42);
+          done();
+        });
+      });
+    });
+
+    describe('untap', function() {
+      it('stops values from being put on a tap channel', function(done) {
+        var source = csp.chan(1);
+        var mult = csp.mult(source);
+        var tap1 = csp.chan(2);
+        var tap2 = csp.chan(2);
+
+        csp.tap(mult, tap1);
+        csp.tap(mult, tap2);
+
+        csp.go(function*() {
+          csp.untap(mult, tap2);
+
+          yield csp.put(source, 42);
+
+          // We force the next tick because if we put on the tap channel
+          // directly, it will show up before the value from the mult. In other
+          // words, 43 will show up before 42. This is a bug in core.async as
+          // well.
+          process.nextTick(function() {
+            csp.go(function*() {
+              yield csp.put(tap1, 43);
+              yield csp.put(tap2, 43);
+
+              expect(yield csp.take(tap1)).to.equal(42);
+              expect(yield csp.take(tap1)).to.equal(43);
+              expect(yield csp.take(tap2)).to.equal(43);
+
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    describe('untapAll', function() {
+      it('stops values from being put on any of the tap channels', function(done) {
+        var source = csp.chan(1);
+        var mult = csp.mult(source);
+        var tap1 = csp.chan(2);
+        var tap2 = csp.chan(2);
+
+        csp.tap(mult, tap1);
+        csp.tap(mult, tap2);
+
+        csp.go(function*() {
+          csp.untapAll(mult);
+
+          yield csp.put(source, 42);
+
+          // We force the next tick because if we put on the tap channel
+          // directly, it will show up before the value from the mult. In other
+          // words, 43 will show up before 42. This is a bug in core.async as
+          // well.
+          process.nextTick(function() {
+            csp.go(function*() {
+              yield csp.put(tap1, 43);
+              yield csp.put(tap2, 43);
+
+              expect(yield csp.take(tap1)).to.equal(43);
+              expect(yield csp.take(tap2)).to.equal(43);
+
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
 });

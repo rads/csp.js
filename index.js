@@ -578,6 +578,61 @@ function toChan(array) {
   return channel;
 }
 
+function mult(channel) {
+  var m = {outChans: {}};
+  var doneChan = chan(1);
+  var doneCount;
+
+  function done() {
+    doneCount--;
+    if (doneCount === 0) putAsync(doneChan, true);
+  }
+
+  go(function*() {
+    var val;
+
+    while (true) {
+      val = yield take(channel);
+
+      if (val !== null) {
+        doneCount = util.keys(m.outChans).length;
+
+        util.each(m.outChans, function(out) {
+          try {
+            putAsync(out.chan, val, done);
+          } catch (e) {
+            doneCount--;
+            untap(m, out.chan);
+          }
+        });
+
+        yield take(doneChan);
+      } else {
+        util.each(m.outChans, function(out, k) {
+          if (out.shouldClose) close(out.chan);
+        });
+        break;
+      }
+    }
+  });
+
+  return m;
+}
+
+function tap(mult, channel, shouldClose) {
+  if (typeof shouldClose === 'undefined') shouldClose = true;
+
+  mult.outChans[channel._id] = {chan: channel, shouldClose: shouldClose};
+}
+
+function untap(mult, channel) {
+  delete mult.outChans[channel._id];
+}
+
+function untapAll(mult, channel) {
+  mult.outChans = {};
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -611,6 +666,10 @@ module.exports = {
   split: split,
   ontoChan: ontoChan,
   toChan: toChan,
+  mult: mult,
+  tap: tap,
+  untap: untap,
+  untapAll: untapAll,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
