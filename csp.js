@@ -1,7 +1,8 @@
 /*
- * CSP.js 0.1.0
- * This code is released under the MIT license.
- */
+* CSP.js 0.2.0
+* Copyright (c) 2013, Radford Smith
+* This code is released under the MIT license.
+*/
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.CSP=e():"undefined"!=typeof global?global.CSP=e():"undefined"!=typeof self&&(self.CSP=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
@@ -9,7 +10,7 @@ return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requi
 var buffers = require('./lib/buffers'),
     chans = require('./lib/channels'),
     goBlocks = require('./lib/go_blocks'),
-    extend = require('./lib/util').extend;
+    util = require('./lib/util');
 
 var chan = chans.chan,
     buffer = chans.defaultBuffer,
@@ -85,7 +86,7 @@ function MapPullChannel(channel, fn) {
   this._fn = fn;
 }
 
-extend(MapPullChannel.prototype, {
+util.extend(MapPullChannel.prototype, {
   take: function(handler) {
     var ret = this._channel.take(new MapPullHandler(handler, this._fn));
 
@@ -110,7 +111,7 @@ function MapPullHandler(handler, fn) {
   this._fn = fn;
 }
 
-extend(MapPullHandler.prototype, {
+util.extend(MapPullHandler.prototype, {
   isActive: function() {
     return this._handler.isActive();
   },
@@ -134,7 +135,7 @@ function MapPushChannel(channel, fn) {
   this._fn = fn;
 }
 
-extend(MapPushChannel.prototype, {
+util.extend(MapPushChannel.prototype, {
   take: function(handler) {
     return this._channel.take(handler);
   },
@@ -568,7 +569,7 @@ function partition(channel, n, bufOrN) {
   return out;
 }
 
-var NOTHING = new Object;
+var NOTHING = {};
 
 function partitionBy(channel /* , [bufOrN,] fn */) {
   var bufOrN, fn;
@@ -725,7 +726,7 @@ function FilterPush(channel, fn) {
   this._fn = fn;
 }
 
-extend(FilterPush.prototype, {
+util.extend(FilterPush.prototype, {
   take: function(handler) {
     return this._channel.take(handler);
   },
@@ -965,6 +966,190 @@ function toChan(array) {
   return channel;
 }
 
+function mult(channel) {
+  var m = {outChans: {}, muxChan: channel};
+  var doneChan = chan(1);
+  var doneCount;
+
+  function done() {
+    doneCount--;
+    if (doneCount === 0) putAsync(doneChan, true);
+  }
+
+  go(wrapGenerator.mark(function() {
+    var val;
+
+    return wrapGenerator(function($ctx) {
+      while (1) switch ($ctx.next) {
+      case 0:
+        if (!true) {
+          $ctx.next = 17;
+          break;
+        }
+
+        $ctx.next = 3;
+        return take(channel);
+      case 3:
+        val = $ctx.sent;
+
+        if (!(val !== null)) {
+          $ctx.next = 11;
+          break;
+        }
+
+        doneCount = util.keys(m.outChans).length;
+
+        util.each(m.outChans, function(out) {
+          try {
+            putAsync(out.chan, val, done);
+          } catch (e) {
+            doneCount--;
+            untap(m, out.chan);
+          }
+        });
+
+        $ctx.next = 9;
+        return take(doneChan);
+      case 9:
+        $ctx.next = 15;
+        break;
+      case 11:
+        util.each(m.outChans, function(out, k) {
+          if (out.shouldClose) close(out.chan);
+        });
+
+        delete $ctx.thrown;
+        $ctx.next = 17;
+        break;
+      case 15:
+        $ctx.next = 0;
+        break;
+      case 17:
+      case "end":
+        return $ctx.stop();
+      }
+    }, this);
+  }));
+
+  return m;
+}
+
+function tap(mult, channel, shouldClose) {
+  if (typeof shouldClose === 'undefined') shouldClose = true;
+
+  mult.outChans[channel._id] = {chan: channel, shouldClose: shouldClose};
+}
+
+function untap(mult, channel) {
+  delete mult.outChans[channel._id];
+}
+
+function untapAll(mult, channel) {
+  mult.outChans = {};
+}
+
+function constantlyNull() {
+  return null;
+}
+
+function pub(channel, topicFn, bufFn) {
+  if (typeof bufFn === 'undefined') bufFn = constantlyNull;
+
+  var p = {mults: {}, bufFn: bufFn};
+
+  go(wrapGenerator.mark(function() {
+    var val, topic, m;
+
+    return wrapGenerator(function($ctx) {
+      while (1) switch ($ctx.next) {
+      case 0:
+        if (!true) {
+          $ctx.next = 29;
+          break;
+        }
+
+        $ctx.next = 3;
+        return take(channel);
+      case 3:
+        val = $ctx.sent;
+
+        if (!(val !== null)) {
+          $ctx.next = 23;
+          break;
+        }
+
+        topic = topicFn(val);
+        m = p.mults[topic];
+
+        if (!!m) {
+          $ctx.next = 11;
+          break;
+        }
+
+        delete $ctx.thrown;
+        $ctx.next = 0;
+        break;
+      case 11:
+        $ctx.pushTry(17, null, null);
+        $ctx.next = 14;
+        return put(m.muxChan, val);
+      case 14:
+        $ctx.popCatch(17);
+        $ctx.next = 21;
+        break;
+      case 17:
+        $ctx.popCatch(17);
+        $ctx.t0 = $ctx.thrown;
+        delete $ctx.thrown;
+        delete p.mults[topic];
+      case 21:
+        $ctx.next = 27;
+        break;
+      case 23:
+        util.each(p.mults, function(val, key) {
+          close(val.muxChan);
+        });
+
+        delete $ctx.thrown;
+        $ctx.next = 29;
+        break;
+      case 27:
+        $ctx.next = 0;
+        break;
+      case 29:
+      case "end":
+        return $ctx.stop();
+      }
+    }, this);
+  }));
+
+  return p;
+}
+
+function sub(p, topic, channel, shouldClose) {
+  if (typeof shouldClose === 'undefined') shouldClose = true;
+
+  if (!p.mults[topic]) {
+    p.mults[topic] = mult(chan(p.bufFn(topic)));
+  }
+
+  var m = p.mults[topic];
+  tap(m, channel, shouldClose);
+}
+
+function unsub(p, topic, channel) {
+  var m = p.mults[topic];
+  if (m) untap(m, channel);
+}
+
+function unsubAll(p, topic) {
+  if (topic) {
+    delete p.mults[topic];
+  } else {
+    p.mults = {};
+  }
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -998,6 +1183,14 @@ module.exports = {
   split: split,
   ontoChan: ontoChan,
   toChan: toChan,
+  mult: mult,
+  tap: tap,
+  untap: untap,
+  untapAll: untapAll,
+  pub: pub,
+  sub: sub,
+  unsub: unsub,
+  unsubAll: unsubAll,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle
@@ -1006,7 +1199,7 @@ module.exports = {
 },{"./lib/buffers":2,"./lib/channels":3,"./lib/go_blocks":4,"./lib/util":5}],2:[function(require,module,exports){
 'use strict';
 
-var extend = require('./util').extend;
+var util = require('./util');
 
 function arrayCopy(src, srcStart, dest, destStart, len) {
   for (var i = 0; i < len; i++) {
@@ -1025,7 +1218,7 @@ function RingBuffer(size) {
   this._arr = new Array(size);
 }
 
-extend(RingBuffer.prototype, {
+util.extend(RingBuffer.prototype, {
   pop: function() {
     if (this.length === 0) return null;
 
@@ -1089,7 +1282,7 @@ function FixedBuffer(size) {
   this._buffer = new RingBuffer(size);
 }
 
-extend(FixedBuffer.prototype, {
+util.extend(FixedBuffer.prototype, {
   add: function(val) {
     if (this.isFull()) throw new Error("Can't add to a full buffer");
     this._buffer.unshift(val);
@@ -1117,7 +1310,7 @@ function DroppingBuffer(size) {
   this._buffer = new RingBuffer(size);
 }
 
-extend(DroppingBuffer.prototype, {
+util.extend(DroppingBuffer.prototype, {
   isFull: function() {
     return false;
   },
@@ -1145,7 +1338,7 @@ function SlidingBuffer(size) {
   this._buffer = new RingBuffer(size);
 }
 
-extend(SlidingBuffer.prototype, {
+util.extend(SlidingBuffer.prototype, {
   isFull: function() {
     return false;
   },
@@ -1177,7 +1370,7 @@ module.exports = {
 var process=require("__browserify_process");'use strict';
 
 var buffers = require('./buffers'),
-    extend = require('./util').extend;
+    util = require('./util');
 
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
@@ -1192,7 +1385,7 @@ function FnHandler(callback) {
   this._callback = callback;
 }
 
-extend(FnHandler.prototype, {
+util.extend(FnHandler.prototype, {
   isActive: function() {
     return true;
   },
@@ -1216,6 +1409,7 @@ function Channel(bufferOrN) {
     buf = bufferOrN;
   }
 
+  this._id = util.uuid();
   this._buffer = buf;
   this._puts = buffers.ringBuffer(32);
   this._dirtyPuts = 0;
@@ -1381,8 +1575,8 @@ module.exports = {
 'use strict';
 
 var chans = require('./channels'),
-    extend = require('./util').extend,
-    FnHandler = chans.FnHandler;
+    FnHandler = chans.FnHandler,
+    util = require('./util');
 
 function go(block) {
   var machine = {gen: block(), ret: chans.chan()};
@@ -1427,7 +1621,7 @@ function AltFlag() {
   this._isActive = true;
 }
 
-extend(AltFlag.prototype, {
+util.extend(AltFlag.prototype, {
   isActive: function() {
     return this._isActive;
   },
@@ -1443,7 +1637,7 @@ function AltHandler(flag, callback) {
   this._callback = callback;
 }
 
-extend(AltHandler.prototype, {
+util.extend(AltHandler.prototype, {
   isActive: function() {
     return this._flag.isActive();
   },
@@ -1629,26 +1823,64 @@ module.exports = {
 },{"./channels":3,"./util":5}],5:[function(require,module,exports){
 'use strict';
 
+// Helper functions copied from Underscore.js 1.5.2
+
 var slice = Array.prototype.slice;
+var nativeForEach = Array.prototype.forEach;
+var nativeKeys = Object.keys;
+var breaker = {};
 
-function extend(obj /* , rest... */) {
-  var rest = slice.call(arguments, 1);
-  var source;
+var keys = nativeKeys || function(obj) {
+  if (obj !== Object(obj)) throw new TypeError('Invalid object');
+  var keys = [];
+  for (var key in obj) if (obj.hasOwnProperty(key)) keys.push(key);
+  return keys;
+};
 
-  for (var i = 0, j = rest.length; i < j; i++) {
-    source = rest[i];
+function each(obj, iterator, context) {
+  var i, length;
+  if (!obj) return;
+  if (nativeForEach && obj.forEach === nativeForEach) {
+    obj.forEach(iterator, context);
+  } else if (obj.length === +obj.length) {
+    for (i = 0, length = obj.length; i < length; i++) {
+      if (iterator.call(context, obj[i], i, obj) === breaker) return;
+    }
+  } else {
+    var ks = keys(obj);
+    for (i = 0, length = ks.length; i < length; i++) {
+      if (iterator.call(context, obj[ks[i]], ks[i], obj) === breaker) return;
+    }
+  }
+}
+
+function extend(obj) {
+  each(slice.call(arguments, 1), function(source) {
     if (source) {
       for (var prop in source) {
         obj[prop] = source[prop];
       }
     }
-  }
-
+  });
   return obj;
 }
 
+// http://stackoverflow.com/a/8809472/821706
+function uuid() {
+  var d = new Date().getTime();
+  var tpl = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+  return tpl.replace(/[xy]/g, function(c) {
+    var r = (d + Math.random()*16)%16 | 0;
+    d = Math.floor(d/16);
+    return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+  });
+}
+
 module.exports = {
-  extend: extend
+  extend: extend,
+  each: each,
+  keys: keys,
+  uuid: uuid
 };
 
 },{}],6:[function(require,module,exports){
