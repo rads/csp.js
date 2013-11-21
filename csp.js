@@ -1126,27 +1126,26 @@ function pub(channel, topicFn, bufFn) {
   return p;
 }
 
-function sub(p, topic, channel, shouldClose) {
+function sub(pub, topic, channel, shouldClose) {
   if (typeof shouldClose === 'undefined') shouldClose = true;
 
-  if (!p.mults[topic]) {
-    p.mults[topic] = mult(chan(p.bufFn(topic)));
+  if (!pub.mults[topic]) {
+    pub.mults[topic] = mult(chan(pub.bufFn(topic)));
   }
 
-  var m = p.mults[topic];
-  tap(m, channel, shouldClose);
+  tap(pub.mults[topic], channel, shouldClose);
 }
 
-function unsub(p, topic, channel) {
-  var m = p.mults[topic];
-  if (m) untap(m, channel);
+function unsub(pub, topic, channel) {
+  var mult = pub.mults[topic];
+  if (mult) untap(mult, channel);
 }
 
-function unsubAll(p, topic) {
+function unsubAll(pub, topic) {
   if (topic) {
-    delete p.mults[topic];
+    delete pub.mults[topic];
   } else {
-    p.mults = {};
+    pub.mults = {};
   }
 }
 
@@ -1534,8 +1533,11 @@ Channel.prototype.close = function() {
   }
 };
 
+function noOp() {}
+
 function takeAsync(channel, onComplete, onCaller) {
   if (typeof onCaller === 'undefined') onCaller = true;
+  if (!onComplete) onComplete = noOp;
 
   var result = channel.take(new FnHandler(onComplete));
   if (result.immediate) {
@@ -1546,8 +1548,6 @@ function takeAsync(channel, onComplete, onCaller) {
     }
   }
 }
-
-function noOp() {}
 
 function putAsync(channel, value, onComplete, onCaller) {
   if (typeof onCaller === 'undefined') onCaller = true;
