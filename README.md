@@ -130,13 +130,27 @@ Documentation is still in-progress. For more details, check the [unit tests](htt
 
 ### toChan(array)
 
+### mult(channel)
+
+### tap(mult, channel [, shouldClose])
+
+### untap(mult, channel)
+
+### untapAll(mult, channel)
+
+### pub(channel, topicFn [, bufFn])
+
+### sub(pub, topic, channel [, shouldClose])
+
+### unsub(pub, topic, channel)
+
+### unsubAll(pub [, topic])
+
 ## TODO
 
 - More documentation
 - More functions
-    - mult, tap, untap, untapAll
     - mix, admix, unmix, unmixAll, toggle, soloMode
-    - pub, sub, unsub, unsubAll
 - Optimize for speed and file size
 - Test for compatibility in IE
 
