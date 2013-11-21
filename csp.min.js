@@ -1,5 +1,5 @@
 /*
-* CSP.js 0.2.0
+* CSP.js 0.2.1
 * Copyright (c) 2013, Radford Smith
 * This code is released under the MIT license.
 */

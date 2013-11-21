@@ -1,0 +1,23 @@
+{
+  "name": "csp.js",
+  "main": "index.js",
+  "version": "0.2.1",
+  "homepage": "https://rads.github.io/csp.js/",
+  "authors": [
+    "Radford Smith <contact@radsmith.com>"
+  ],
+  "description": "CSP for vanilla JavaScript.",
+  "keywords": [
+    "csp",
+    "async",
+    "channels",
+    "go"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test"
+  ]
+}
