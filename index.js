@@ -579,7 +579,7 @@ function toChan(array) {
 }
 
 function mult(channel) {
-  var m = {outChans: {}};
+  var m = {outChans: {}, muxChan: channel};
   var doneChan = chan(1);
   var doneCount;
 
@@ -633,6 +633,68 @@ function untapAll(mult, channel) {
   mult.outChans = {};
 }
 
+function constantlyNull() {
+  return null;
+}
+
+function pub(channel, topicFn, bufFn) {
+  if (typeof bufFn === 'undefined') bufFn = constantlyNull;
+
+  var p = {mults: {}, bufFn: bufFn};
+
+  go(function*() {
+    var val, topic, m;
+
+    while (true) {
+      val = yield take(channel);
+
+      if (val !== null) {
+        topic = topicFn(val);
+        m = p.mults[topic];
+
+        if (!m) continue;
+
+        try {
+          yield put(m.muxChan, val);
+        } catch (e) {
+          delete p.mults[topic];
+        }
+      } else {
+        util.each(p.mults, function(val, key) {
+          close(val.muxChan);
+        });
+        break;
+      }
+    }
+  });
+
+  return p;
+}
+
+function sub(p, topic, channel, shouldClose) {
+  if (typeof shouldClose === 'undefined') shouldClose = true;
+
+  if (!p.mults[topic]) {
+    p.mults[topic] = mult(chan(p.bufFn(topic)));
+  }
+
+  var m = p.mults[topic];
+  tap(m, channel, shouldClose);
+}
+
+function unsub(p, topic, channel) {
+  var m = p.mults[topic];
+  if (m) untap(m, channel);
+}
+
+function unsubAll(p, topic) {
+  if (topic) {
+    delete p.mults[topic];
+  } else {
+    p.mults = {};
+  }
+}
+
 module.exports = {
   chan: chan,
   buffer: buffer,
@@ -670,6 +732,10 @@ module.exports = {
   tap: tap,
   untap: untap,
   untapAll: untapAll,
+  pub: pub,
+  sub: sub,
+  unsub: unsub,
+  unsubAll: unsubAll,
 
   // Used for testing only
   _stubShuffle: goBlocks._stubShuffle

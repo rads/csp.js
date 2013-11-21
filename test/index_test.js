@@ -806,4 +806,145 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('pub/sub/unsub/unsubAll', function() {
+    describe('pub/sub', function() {
+      it('publishes values to channels partitioned by topic', function(done) {
+        var source = csp.chan(1);
+        var p = csp.pub(source, function(val) { return val.topic; });
+        var aSub = csp.chan(2);
+        var bSub = csp.chan(2);
+
+        csp.sub(p, 'a', aSub);
+        csp.sub(p, 'b', bSub);
+
+        csp.go(function*() {
+          yield csp.put(source, {topic: 'a', value: 42});
+          yield csp.put(source, {topic: 'b', value: 43});
+          yield csp.put(source, {topic: 'a', value: 44});
+          yield csp.put(source, {topic: 'b', value: 45});
+
+          var aVal1 = yield csp.take(aSub);
+          var aVal2 = yield csp.take(aSub);
+          var bVal1 = yield csp.take(bSub);
+          var bVal2 = yield csp.take(bSub);
+
+          expect(aVal1.value).to.equal(42);
+          expect(aVal2.value).to.equal(44);
+          expect(bVal1.value).to.equal(43);
+          expect(bVal2.value).to.equal(45);
+
+          done();
+        });
+      });
+    });
+
+    describe('unsub', function() {
+      it('stops publishing values to a channel', function(done) {
+        var source = csp.chan(1);
+        var p = csp.pub(source, function(val) { return val.topic; });
+        var aSub = csp.chan(2);
+        var bSub1 = csp.chan(2);
+        var bSub2 = csp.chan(2);
+
+        csp.sub(p, 'a', aSub);
+        csp.sub(p, 'b', bSub1);
+        csp.sub(p, 'b', bSub2);
+
+        csp.go(function*() {
+          csp.unsub(p, 'b', bSub2);
+
+          yield csp.put(source, {topic: 'a', value: 42});
+          yield csp.put(source, {topic: 'b', value: 43});
+          yield csp.put(source, {topic: 'a', value: 44});
+          yield csp.put(source, {topic: 'b', value: 45});
+          yield csp.put(bSub2, 46);
+
+          var aVal1 = yield csp.take(aSub);
+          var aVal2 = yield csp.take(aSub);
+          var b1Val1 = yield csp.take(bSub1);
+          var b1Val2 = yield csp.take(bSub1);
+          var b2Val1 = yield csp.take(bSub2);
+
+          expect(aVal1.value).to.equal(42);
+          expect(aVal2.value).to.equal(44);
+          expect(b1Val1.value).to.equal(43);
+          expect(b1Val2.value).to.equal(45);
+          expect(b2Val1).to.equal(46);
+
+          done();
+        });
+      });
+    });
+
+    describe('unsubAll', function() {
+      describe('WITH a given topic', function() {
+        it('stops publishing values to channels subscribed to a topic', function(done) {
+          var source = csp.chan(1);
+          var p = csp.pub(source, function(val) { return val.topic; });
+          var aSub = csp.chan(2);
+          var bSub1 = csp.chan(2);
+          var bSub2 = csp.chan(2);
+
+          csp.sub(p, 'a', aSub);
+          csp.sub(p, 'b', bSub1);
+          csp.sub(p, 'b', bSub2);
+
+          csp.go(function*() {
+            csp.unsubAll(p, 'b');
+
+            yield csp.put(source, {topic: 'a', value: 42});
+            yield csp.put(source, {topic: 'b', value: 43});
+            yield csp.put(source, {topic: 'a', value: 44});
+            yield csp.put(source, {topic: 'b', value: 45});
+            yield csp.put(bSub1, 46);
+            yield csp.put(bSub2, 47);
+
+            var aVal1 = yield csp.take(aSub);
+            var aVal2 = yield csp.take(aSub);
+            var b1Val1 = yield csp.take(bSub1);
+            var b2Val1 = yield csp.take(bSub2);
+
+            expect(aVal1.value).to.equal(42);
+            expect(aVal2.value).to.equal(44);
+            expect(b1Val1).to.equal(46);
+            expect(b2Val1).to.equal(47);
+
+            done();
+          });
+        });
+      });
+
+      describe('WITHOUT a given topic', function() {
+        it('stops publishing values to all channels', function(done) {
+          var source = csp.chan(1);
+          var p = csp.pub(source, function(val) { return val.topic; });
+          var aSub = csp.chan(2);
+          var bSub = csp.chan(2);
+
+          csp.sub(p, 'a', aSub);
+          csp.sub(p, 'b', bSub);
+
+          csp.go(function*() {
+            csp.unsubAll(p);
+
+            yield csp.put(source, {topic: 'a', value: 42});
+            yield csp.put(source, {topic: 'b', value: 43});
+            yield csp.put(source, {topic: 'a', value: 44});
+            yield csp.put(source, {topic: 'b', value: 45});
+            yield csp.put(aSub, 46);
+            yield csp.put(bSub, 47);
+
+            var aVal1 = yield csp.take(aSub);
+            var bVal1 = yield csp.take(bSub);
+
+            expect(aVal1).to.equal(46);
+            expect(bVal1).to.equal(47);
+
+            done();
+          });
+        });
+      });
+    });
+  });
 });
