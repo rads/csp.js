@@ -76,9 +76,9 @@ Documentation is still in-progress. For more details, check the [unit tests](htt
 
 ### yield alts(channels [, options])
 
-### takeAsync(channel, onComplete)
+### takeAsync(channel [, onComplete [, onCaller]])
 
-### putAsync(channel, value, onComplete)
+### putAsync(channel, value [, onComplete [, onCaller]])
 
 ### close(channel)
 
