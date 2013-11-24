@@ -1,5 +1,9 @@
 # Changes to CSP.js
 
+## 0.2.4
+
+- Close the return channels from go blocks even when there is no return statement
+
 ## 0.2.3
 
 - Update changelog and version comments

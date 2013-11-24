@@ -74,18 +74,38 @@ describe('csp', function() {
     });
   });
 
-  it('go blocks return a channel', function(done) {
-    var c1 = csp.chan();
-    var c2 = csp.go(function*() {
-      yield csp.take(c1);
-      return 42;
+  describe('the channel returned by a go block', function() {
+    describe('WITH a return statement', function() {
+      it('provides the return value and closes', function(done) {
+        var c1 = csp.chan();
+        var c2 = csp.go(function*() {
+          yield csp.take(c1);
+          return 42;
+        });
+
+        csp.putAsync(c1, 43);
+
+        csp.takeAsync(c2, function(val) {
+          expect(val).to.equal(42);
+          done();
+        });
+      });
     });
 
-    csp.putAsync(c1, 43);
+    describe('WITHOUT a return statement', function() {
+      it('provides no value and closes', function(done) {
+        var c1 = csp.chan();
+        var c2 = csp.go(function*() {
+          yield csp.take(c1);
+        });
 
-    csp.takeAsync(c2, function(val) {
-      expect(val).to.equal(42);
-      done();
+        csp.putAsync(c1, 43);
+
+        csp.takeAsync(c2, function(val) {
+          expect(val).to.be.null;
+          done();
+        });
+      });
     });
   });
 
