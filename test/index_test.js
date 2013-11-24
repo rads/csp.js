@@ -967,4 +967,26 @@ describe('csp', function() {
       });
     });
   });
+
+  describe('goLoop', function() {
+    it('loops until the go block returns', function(done) {
+      var c1 = csp.chan();
+      var c2 = csp.goLoop(function*() {
+        var val = yield csp.take(c1);
+        if (val === 3) return 42;
+      });
+
+      csp.go(function*() {
+        var val = yield csp.take(c2);
+        expect(val).to.equal(42);
+        done();
+      });
+
+      csp.go(function*() {
+        yield csp.put(c1, 1);
+        yield csp.put(c1, 2);
+        yield csp.put(c1, 3);
+      });
+    });
+  });
 });

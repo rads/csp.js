@@ -70,6 +70,10 @@ Documentation is still in-progress. For more details, check the [unit tests](htt
 
 ### go(function*() { ... })
 
+### goLoop(function*() { ... })
+
+Repeatedly executes the go block until a return statment is found. Equivalent to `go(function*() { while(true) { ... } })`.
+
 ### yield take(channel)
 
 ### yield put(channel, value)
