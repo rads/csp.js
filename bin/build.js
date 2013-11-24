@@ -10,7 +10,9 @@ var banner = [
   ' */'
 ].join('\n');
 
-if (!(/^\d+\.\d+\.\d+$/.test(version))) {
+var SEMVER_REGEXP = /^((\d+)\.(\d+)\.(\d+))(?:-([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?(?:\+([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?$/;
+
+if (!SEMVER_REGEXP.test(version)) {
   echo('Requires a valid version number as the first argument');
   exit(1);
 }
