@@ -1,5 +1,5 @@
 /*
- * CSP.js v0.2.4
+ * CSP.js v0.3.0-beta.0
  * Copyright (c) 2013, Radford Smith
  * This code is released under the MIT license.
  */
@@ -19,6 +19,7 @@ var chan = chans.chan,
     putAsync = chans.putAsync,
     takeAsync = chans.takeAsync,
     go = goBlocks.go,
+    goLoop = goBlocks.goLoop,
     take = goBlocks.take,
     put = goBlocks.put,
     alts = goBlocks.alts;
@@ -1158,6 +1159,7 @@ module.exports = {
   takeAsync: takeAsync,
   close: close,
   go: go,
+  goLoop: goLoop,
   put: put,
   take: take,
   alts: alts,
@@ -1578,6 +1580,43 @@ var chans = require('./channels'),
     FnHandler = chans.FnHandler,
     util = require('./util');
 
+function goLoop(block) {
+  return go(wrapGenerator.mark(function() {
+    var val;
+
+    return wrapGenerator(function($ctx) {
+      while (1) switch ($ctx.next) {
+      case 0:
+        if (!true) {
+          $ctx.next = 11;
+          break;
+        }
+
+        $ctx.next = 3;
+        return take(go(block));
+      case 3:
+        val = $ctx.sent;
+
+        if (!(val !== null)) {
+          $ctx.next = 9;
+          break;
+        }
+
+        $ctx.rval = val;
+        delete $ctx.thrown;
+        $ctx.next = 11;
+        break;
+      case 9:
+        $ctx.next = 0;
+        break;
+      case 11:
+      case "end":
+        return $ctx.stop();
+      }
+    }, this);
+  }));
+}
+
 function go(block) {
   var machine = {gen: block(), ret: chans.chan()};
   runMachine(machine);
@@ -1816,6 +1855,7 @@ function alts(channels, options) {
 
 module.exports = {
   go: go,
+  goLoop: goLoop,
   take: take,
   put: put,
   alts: alts,
