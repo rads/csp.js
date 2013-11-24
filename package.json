@@ -38,6 +38,7 @@
     "regenerator": "0.2.10",
     "regeneratorify-standalone": "0.0.1",
     "jshint": "2.3.0",
-    "uglify-js": "2.4.3"
+    "uglify-js": "2.4.3",
+    "shelljs": "0.2.6"
   }
 }
