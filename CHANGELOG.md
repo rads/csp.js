@@ -1,6 +1,6 @@
 # Changes to CSP.js
 
-## 0.3.0-beta.0
+## 0.3.0-dev
 
 - Add goLoop
 
