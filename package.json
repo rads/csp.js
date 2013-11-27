@@ -9,6 +9,15 @@
     "example": "examples",
     "test": "test"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rads/csp.js"
+  },
+  "author": "Radford Smith",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rads/csp.js/issues"
+  },
   "scripts": {
     "pretest": "./node_modules/.bin/jshint index.js lib",
     "test": "./node_modules/.bin/mocha --harmony-generators test/**/*_test.js"
@@ -20,14 +29,13 @@
     "esnext": true,
     "-W058": false
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rads/csp.js"
+  "browserify": {
+    "transform": [
+      "regeneratorify-no-runtime"
+    ]
   },
-  "author": "Radford Smith",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/rads/csp.js/issues"
+  "dependencies": {
+    "regeneratorify-no-runtime": "0.0.1"
   },
   "devDependencies": {
     "mocha": "1.14.0",
@@ -36,7 +44,6 @@
     "sinon-chai": "2.4.0",
     "browserify": "2.35.1",
     "regenerator": "0.2.10",
-    "regeneratorify-standalone": "0.0.1",
     "jshint": "2.3.0",
     "uglify-js": "2.4.3",
     "shelljs": "0.2.6"

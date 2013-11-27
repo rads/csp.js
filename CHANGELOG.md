@@ -3,6 +3,7 @@
 ## 0.3.0-dev
 
 - Add goLoop
+- Add a key to package.json to fix compatibility with browserify
 
 ## 0.2.4
 
