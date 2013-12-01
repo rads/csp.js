@@ -984,7 +984,7 @@ function mult(channel) {
       while (1) switch ($ctx.next) {
       case 0:
         if (!true) {
-          $ctx.next = 17;
+          $ctx.next = 21;
           break;
         }
 
@@ -994,12 +994,21 @@ function mult(channel) {
         val = $ctx.sent;
 
         if (!(val !== null)) {
-          $ctx.next = 11;
+          $ctx.next = 15;
           break;
         }
 
         doneCount = util.keys(m.outChans).length;
 
+        if (!(doneCount === 0)) {
+          $ctx.next = 10;
+          break;
+        }
+
+        delete $ctx.thrown;
+        $ctx.next = 0;
+        break;
+      case 10:
         util.each(m.outChans, function(out) {
           try {
             putAsync(out.chan, val, done);
@@ -1009,23 +1018,23 @@ function mult(channel) {
           }
         });
 
-        $ctx.next = 9;
+        $ctx.next = 13;
         return take(doneChan);
-      case 9:
-        $ctx.next = 15;
+      case 13:
+        $ctx.next = 19;
         break;
-      case 11:
+      case 15:
         util.each(m.outChans, function(out, k) {
           if (out.shouldClose) close(out.chan);
         });
 
         delete $ctx.thrown;
-        $ctx.next = 17;
+        $ctx.next = 21;
         break;
-      case 15:
+      case 19:
         $ctx.next = 0;
         break;
-      case 17:
+      case 21:
       case "end":
         return $ctx.stop();
       }
@@ -1490,13 +1499,13 @@ Channel.prototype.put = function(value, handler) {
     buffer.add(value);
     return {immediate: true};
   } else {
-    if (this.dirtyPuts > MAX_DIRTY) {
-      this.dirtyPuts = 0;
+    if (this._dirtyPuts > MAX_DIRTY) {
+      this._dirtyPuts = 0;
       puts.cleanup(function(putter) {
         return putter.handler.isActive();
       });
     } else {
-      this.dirtyPuts++;
+      this._dirtyPuts++;
     }
 
     if (puts.length >= MAX_QUEUE_SIZE) {
