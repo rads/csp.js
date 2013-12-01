@@ -4,6 +4,7 @@
 
 - Add goLoop
 - Add a key to package.json to fix compatibility with browserify
+- Make mult drop values when there are no taps ([ASYNC-41](http://dev.clojure.org/jira/browse/ASYNC-41))
 
 ## 0.2.4
 

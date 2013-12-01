@@ -597,6 +597,7 @@ function mult(channel) {
 
       if (val !== null) {
         doneCount = util.keys(m.outChans).length;
+        if (doneCount === 0) continue;
 
         util.each(m.outChans, function(out) {
           try {
