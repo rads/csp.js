@@ -1,5 +1,5 @@
-COMPILER := ./node_modules/.bin/browserify -t regeneratorify-standalone
-COMPILER_STANDALONE := ./node_modules/.bin/browserify -t regeneratorify-standalone --standalone CSP
+COMPILER := ./node_modules/.bin/browserify -t regeneratorify-no-runtime
+COMPILER_STANDALONE := ./node_modules/.bin/browserify -t regeneratorify-no-runtime --standalone CSP
 
 test: test/browser_tests.js
 
