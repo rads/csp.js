@@ -414,12 +414,17 @@ describe('csp', function() {
 
       csp.go(function*() {
         yield csp.put(c1, 42);
+        csp.close(c1);
         yield csp.put(c2, 43);
+        csp.close(c2);
+
         var val1 = yield csp.take(merged);
         var val2 = yield csp.take(merged);
+        var val3 = yield csp.take(merged);
 
         expect(val1).to.equal(42);
         expect(val2).to.equal(43);
+        expect(val3).to.be.null;
         done();
       });
     });

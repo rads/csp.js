@@ -311,7 +311,7 @@ function merge(channels, bufOrN) {
         currentChans = channels;
       case 1:
         if (!true) {
-          $ctx.next = 19;
+          $ctx.next = 22;
           break;
         }
 
@@ -344,14 +344,17 @@ function merge(channels, bufOrN) {
         $ctx.next = 14;
         return put(out, result.value);
       case 14:
-        $ctx.next = 17;
+        $ctx.next = 20;
         break;
       case 16:
         close(out);
-      case 17:
+        delete $ctx.thrown;
+        $ctx.next = 22;
+        break;
+      case 20:
         $ctx.next = 1;
         break;
-      case 19:
+      case 22:
       case "end":
         return $ctx.stop();
       }
@@ -1953,7 +1956,8 @@ process.nextTick = (function () {
     if (canPost) {
         var queue = [];
         window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'process-tick') {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
                 ev.stopPropagation();
                 if (queue.length > 0) {
                     var fn = queue.shift();

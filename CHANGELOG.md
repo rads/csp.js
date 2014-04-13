@@ -5,6 +5,7 @@
 - Add goLoop
 - Add a key to package.json to fix compatibility with browserify
 - Make mult drop values when there are no taps ([ASYNC-41](http://dev.clojure.org/jira/browse/ASYNC-41))
+- Fix infinite loop in `merge` when all source channels are closed
 
 ## 0.2.4
 

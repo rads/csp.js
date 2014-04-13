@@ -225,6 +225,7 @@ function merge(channels, bufOrN) {
         }
       } else {
         close(out);
+        break;
       }
     }
   });
